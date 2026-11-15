@@ -1,0 +1,146 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API سایت دکتر حسین کریمی",
+        "version": "1.0.0",
+        "description": "مستندات کامل APIهای عمومی و مدیریتی"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:4000",
+            "description": "سرور توسعه"
+        }
+    ],
+    "tags": [
+        { "name": "Auth", "description": "احراز هویت" },
+        { "name": "Articles", "description": "مقالات" },
+        { "name": "Experience", "description": "سوابق" },
+        { "name": "Expertise", "description": "حوزه‌های تخصصی" },
+        { "name": "Network", "description": "کارگزاری‌ها" },
+        { "name": "Media", "description": "رسانه" },
+        { "name": "Inquiries", "description": "درخواست‌ها" },
+        { "name": "Settings", "description": "تنظیمات" }
+    ],
+    "components": {
+        "securitySchemes": {
+            "cookieAuth": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "token"
+            }
+        }
+    },
+    "paths": {
+        "/api/v1/auth/login": {
+            "post": {
+                "tags": ["Auth"],
+                "summary": "ورود مدیر",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": { "type": "string" },
+                                    "password": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": { "200": { "description": "ورود موفق" } }
+            }
+        },
+        "/api/v1/auth/me": {
+            "get": {
+                "tags": ["Auth"],
+                "summary": "اطلاعات کاربر فعلی",
+                "security": [{ "cookieAuth": [] }],
+                "responses": { "200": { "description": "اطلاعات کاربر" } }
+            }
+        },
+        "/api/v1/public/articles": {
+            "get": {
+                "tags": ["Articles"],
+                "summary": "لیست مقالات",
+                "responses": { "200": { "description": "لیست مقالات" } }
+            }
+        },
+        "/api/v1/public/articles/{slug}": {
+            "get": {
+                "tags": ["Articles"],
+                "summary": "جزئیات مقاله",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "slug",
+                        "required": true,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": { "200": { "description": "جزئیات مقاله" } }
+            }
+        },
+        "/api/v1/public/experience": {
+            "get": {
+                "tags": ["Experience"],
+                "summary": "لیست سوابق",
+                "responses": { "200": { "description": "لیست سوابق" } }
+            }
+        },
+        "/api/v1/public/expertise": {
+            "get": {
+                "tags": ["Expertise"],
+                "summary": "لیست حوزه‌ها",
+                "responses": { "200": { "description": "لیست حوزه‌ها" } }
+            }
+        },
+        "/api/v1/public/network": {
+            "get": {
+                "tags": ["Network"],
+                "summary": "لیست کارگزاری‌ها",
+                "responses": { "200": { "description": "لیست کارگزاری‌ها" } }
+            }
+        },
+        "/api/v1/public/media": {
+            "get": {
+                "tags": ["Media"],
+                "summary": "لیست رسانه‌ها",
+                "responses": { "200": { "description": "لیست رسانه‌ها" } }
+            }
+        },
+        "/api/v1/public/inquiries": {
+            "post": {
+                "tags": ["Inquiries"],
+                "summary": "ثبت درخواست ارتباط",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "fullName": { "type": "string" },
+                                    "email": { "type": "string" },
+                                    "phone": { "type": "string" },
+                                    "type": { "type": "string" },
+                                    "subject": { "type": "string" },
+                                    "message": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": { "201": { "description": "درخواست ثبت شد" } }
+            }
+        },
+        "/api/v1/public/settings": {
+            "get": {
+                "tags": ["Settings"],
+                "summary": "تنظیمات عمومی سایت",
+                "responses": { "200": { "description": "تنظیمات سایت" } }
+            }
+        }
+    }
+}

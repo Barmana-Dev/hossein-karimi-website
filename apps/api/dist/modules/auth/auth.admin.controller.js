@@ -1,0 +1,183 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthAdminController = void 0;
+const prisma_1 = require("../../config/prisma");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
+class AuthAdminController {
+    // دریافت لیست کاربران
+    async getAllUsers(req, res) {
+        try {
+            const users = await prisma_1.prisma.adminUser.findMany({
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    isActive: true,
+                },
+            });
+            res.json({ success: true, data: users });
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            res.status(500).json({ success: false, error: { message } });
+        }
+    }
+    // ایجاد کاربر جدید
+    async createUser(req, res) {
+        try {
+            const { name, email, password, role, isActive } = req.body;
+            const existing = await prisma_1.prisma.adminUser.findUnique({ where: { email } });
+            if (existing) {
+                return res.status(400).json({
+                    success: false,
+                    error: { message: "این ایمیل قبلاً ثبت شده است" },
+                });
+            }
+            const passwordHash = await bcryptjs_1.default.hash(password, 10);
+            const user = await prisma_1.prisma.adminUser.create({
+                data: {
+                    name,
+                    email,
+                    passwordHash,
+                    role,
+                    isActive: isActive ?? true, //  پیش‌فرض true
+                },
+            });
+            res.status(201).json({
+                success: true,
+                data: {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    isActive: user.isActive, //  برگردون
+                },
+            });
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            res.status(500).json({ success: false, error: { message } });
+        }
+    }
+    // دریافت یک کاربر
+    async getUserById(req, res) {
+        try {
+            const id = req.params.id;
+            const user = await prisma_1.prisma.adminUser.findUnique({
+                where: { id },
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    isActive: true,
+                },
+            });
+            if (!user)
+                return res
+                    .status(404)
+                    .json({ success: false, error: { message: "کاربر یافت نشد" } });
+            res.json({ success: true, data: user });
+        }
+        catch (error) {
+            res.status(500).json({ success: false, error: { message: "خطا" } });
+        }
+    }
+    // ویرایش کاربر
+    async updateUser(req, res) {
+        try {
+            const id = req.params.id;
+            const { name, email, role, isActive, password } = req.body;
+            const dataToUpdate = { name, email, role, isActive };
+            if (password && password.trim() !== "") {
+                dataToUpdate.passwordHash = await bcryptjs_1.default.hash(password, 10);
+            }
+            const user = await prisma_1.prisma.adminUser.update({
+                where: { id },
+                data: dataToUpdate,
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    isActive: true,
+                },
+            });
+            res.json({ success: true, data: user });
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            res.status(500).json({ success: false, error: { message } });
+        }
+    }
+    // 👇 حذف کاربر با همه چک‌ها
+    async deleteUser(req, res) {
+        try {
+            const id = req.params.id;
+            // ۱. جلوگیری از حذف خودت
+            if (req.user?.userId === id) {
+                return res.status(400).json({
+                    success: false,
+                    error: { message: "نمی‌توانید حساب خودتان را حذف کنید" },
+                });
+            }
+            // ۲. چک وجود کاربر
+            const user = await prisma_1.prisma.adminUser.findUnique({ where: { id } });
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    error: { message: "کاربر یافت نشد" },
+                });
+            }
+            // ۳. جلوگیری از حذف آخرین SUPER_ADMIN
+            if (user.role === "SUPER_ADMIN") {
+                const superAdminCount = await prisma_1.prisma.adminUser.count({
+                    where: { role: "SUPER_ADMIN" },
+                });
+                if (superAdminCount <= 1) {
+                    return res.status(400).json({
+                        success: false,
+                        error: { message: "نمی‌توانید آخرین سوپر ادمین را حذف کنید" },
+                    });
+                }
+            }
+            // ۴. حذف
+            await prisma_1.prisma.adminUser.delete({ where: { id } });
+            res.json({ success: true, message: "کاربر با موفقیت حذف شد" });
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            res.status(500).json({ success: false, error: { message } });
+        }
+    }
+    // ویرایش پروفایل خود کاربر
+    async updateMyProfile(req, res) {
+        try {
+            const userId = req.user?.userId;
+            if (!userId)
+                return res
+                    .status(401)
+                    .json({ success: false, error: { message: "دسترسی غیرمجاز" } });
+            const { name, email, password } = req.body;
+            const data = { name, email };
+            if (password && password.trim() !== "") {
+                data.passwordHash = await bcryptjs_1.default.hash(password, 10);
+            }
+            const user = await prisma_1.prisma.adminUser.update({
+                where: { id: userId },
+                data,
+                select: { id: true, name: true, email: true, role: true },
+            });
+            res.json({ success: true, data: user });
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : "خطا در ویرایش";
+            res.status(500).json({ success: false, error: { message } });
+        }
+    }
+}
+exports.AuthAdminController = AuthAdminController;

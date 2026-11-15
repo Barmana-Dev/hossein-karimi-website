@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==================== مدیریت کاربران ====================
+model AdminUser {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("EDITOR") // SUPER_ADMIN, EDITOR
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ==================== تنظیمات سایت ====================
+model SiteSettings {
+  id             String   @id @default(uuid())
+  siteTitle      String
+  siteTitle_en   String?  
+  subtitle       String
+  subtitle_en    String?  
+  biographyShort String
+  biographyShort_en String? 
+  contactEmail   String
+  phone          String
+  address        String?
+  address_en     String?  
+  instagramUrl   String?
+  linkedinUrl    String?
+  telegramUrl    String?
+  seoTitle       String?
+  seoDescription String?
+  portraitImage String?
+  aboutContent    String? 
+   keyField      String? // حوزه فعالیت
+  keyDegree     String? // مدرک تحصیلی
+  keyLanguages  String? // زبان‌ها
+  contactContent  String? 
+  termsContent    String? 
+  privacyContent  String? 
+  updatedAt      DateTime @updatedAt
+}
+
+// ==================== مقالات ====================
+model Article {
+  id             String   @id @default(uuid())
+  slug           String   @unique
+  title          String
+  title_en       String?  
+  excerpt        String
+  excerpt_en     String?  
+  body           String
+  body_en        String?  
+  authorName     String
+  category       String
+  category_en    String?  
+  readTime       Int      @default(5)
+  status         String   @default("draft") // draft, review, published
+  coverImage     String?  
+  publishedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ==================== سوابق حرفه‌ای ====================
+model Experience {
+  id           String   @id @default(uuid())
+  slug         String   @unique
+  title        String
+  title_en     String?  
+  organization String
+  organization_en String? 
+  category     String   // legal, customs, management, education, business
+  role         String
+  role_en      String?  
+  startDate    DateTime?
+  endDate      DateTime?
+  description  String
+  description_en String? 
+  sourceUrl    String?
+  sortOrder    Int      @default(0)
+  status       String   @default("draft")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ==================== حوزه‌های تخصصی ====================
+model Expertise {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  title     String
+  title_en  String?  
+  summary   String
+  summary_en String? 
+  body      String
+  body_en   String?  
+  icon      String
+  sortOrder Int      @default(0)
+  status    String   @default("published")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==================== کارگزاری‌ها ====================
+model Agency {
+  id                  String   @id @default(uuid())
+  slug                String   @unique
+  name                String
+  name_en             String?  
+  description         String
+  description_en      String?  
+  field               String
+  field_en            String?  
+  relationType        String
+  relationType_en     String?  
+  relationDescription String?
+  relationDescription_en String? 
+  city                String?
+  city_en             String?  
+  websiteUrl          String?
+  logoImage           String?
+  featured            Boolean  @default(false)
+  sortOrder           Int      @default(0)
+  status              String   @default("draft")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// ==================== رسانه و رویدادها ====================
+model MediaItem {
+  id          String   @id @default(uuid())
+  type        String   // news, interview, speech, event, video
+  title       String
+  title_en    String?  
+  description String?
+  description_en String? 
+  sourceUrl   String?
+  image       String?
+  happenedAt  DateTime?
+  status      String   @default("draft")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ==================== درخواست‌ها (فرم تماس) ====================
+model Inquiry {
+  id           String   @id @default(uuid())
+  fullName     String
+  email        String?
+  phone        String?
+  type         String
+  subject      String
+  message      String
+  consentAt    DateTime? @default(now())
+  status       String   @default("new") // new, in_review, contacted, closed
+  internalNote String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ==================== کتابخانه رسانه ====================
+model Asset {
+  id           String   @id @default(uuid())
+  urlOrKey     String
+  mimeType     String
+  size         Int
+  altText      String?
+  uploadedBy   String?
+  createdAt    DateTime @default(now())
+}

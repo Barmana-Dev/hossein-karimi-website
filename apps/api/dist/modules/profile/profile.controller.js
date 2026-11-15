@@ -1,0 +1,62 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ProfileController = void 0;
+const profile_service_1 = require("./profile.service");
+const profileService = new profile_service_1.ProfileService();
+class ProfileController {
+    // ۱. دریافت تنظیمات (ادمین)
+    async get(req, res) {
+        try {
+            const data = await profileService.getSettings();
+            res.json({ success: true, data });
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : "خطا در دریافت تنظیمات";
+            res.status(500).json({ success: false, error: { message } });
+        }
+    }
+    // ۲. به‌روزرسانی تنظیمات (ادمین)
+    async update(req, res) {
+        try {
+            const data = await profileService.updateSettings(req.body);
+            res.json({ success: true, data, message: "تنظیمات با موفقیت ذخیره شد." });
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : "خطا در ذخیره تنظیمات";
+            res.status(500).json({ success: false, error: { message } });
+        }
+    }
+    // ۳. دریافت تنظیمات عمومی (برای هدر و فوتر)
+    async getPublicSettings(req, res) {
+        try {
+            const data = await profileService.getSettings();
+            res.json({
+                success: true,
+                data: {
+                    siteTitle: data.siteTitle,
+                    subtitle: data.subtitle,
+                    biographyShort: data.biographyShort,
+                    contactEmail: data.contactEmail,
+                    phone: data.phone,
+                    address: data.address,
+                    instagramUrl: data.instagramUrl,
+                    linkedinUrl: data.linkedinUrl,
+                    telegramUrl: data.telegramUrl,
+                    portraitImage: data.portraitImage,
+                    aboutContent: data.aboutContent,
+                    contactContent: data.contactContent,
+                    termsContent: data.termsContent,
+                    privacyContent: data.privacyContent,
+                    keyField: data.keyField,
+                    keyDegree: data.keyDegree,
+                    keyLanguages: data.keyLanguages,
+                },
+            });
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            res.status(500).json({ success: false, error: { message } });
+        }
+    }
+}
+exports.ProfileController = ProfileController;
