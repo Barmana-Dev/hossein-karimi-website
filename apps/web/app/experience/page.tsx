@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Calendar, Building2, Loader2 } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { SectionHead } from "@/components/ui/SectionHead";
@@ -78,9 +79,10 @@ export default function ExperiencePage() {
               <div className="absolute right-[31px] top-2.5 bottom-2.5 w-0.5 bg-gradient-to-b from-accent via-accent/30 to-border hidden md:block" />
               <div className="space-y-6">
                 {paginatedExps.map((exp) => (
-                  // 👇 div به‌جای Link (بدون رفتن به جزئیات)
-                  <div
+                  // 👇 هر مورد فهرست به صفحه جزئیات همان سابقه وصل است
+                  <Link
                     key={exp.id}
+                    href={`/experience/${exp.slug}`}
                     className="group relative block md:pr-[90px]"
                   >
                     <div className="hidden md:flex absolute right-3.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white border-2 border-accent z-[2] items-center justify-center shadow-[0_0_0_8px_rgba(177,138,82,.08)] transition-all duration-300 group-hover:border-primary">
@@ -106,7 +108,7 @@ export default function ExperiencePage() {
                         {exp.organization}
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>

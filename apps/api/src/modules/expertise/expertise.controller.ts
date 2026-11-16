@@ -12,7 +12,7 @@ export class ExpertiseController {
     try {
       const data = await expertiseService.getPublishedExpertises();
       res.json({ success: true, data });
-    } catch (error: unknown) {
+    } catch {
       res.status(500).json({ success: false, error: { message: "خطا" } });
     }
   }
@@ -27,7 +27,7 @@ export class ExpertiseController {
           .status(404)
           .json({ success: false, error: { message: "یافت نشد" } });
       res.json({ success: true, data });
-    } catch (error: unknown) {
+    } catch {
       res.status(500).json({ success: false, error: { message: "خطا" } });
     }
   }
@@ -36,7 +36,7 @@ export class ExpertiseController {
     try {
       const data = await expertiseService.getAllExpertisesForAdmin();
       res.json({ success: true, data });
-    } catch (error: unknown) {
+    } catch {
       res.status(500).json({ success: false, error: { message: "خطا" } });
     }
   }
@@ -78,7 +78,7 @@ export class ExpertiseController {
           .status(404)
           .json({ success: false, error: { message: "یافت نشد" } });
       res.json({ success: true, data });
-    } catch (error: unknown) {
+    } catch {
       res.status(500).json({ success: false, error: { message: "خطا" } });
     }
   }
@@ -117,7 +117,7 @@ export class ExpertiseController {
     try {
       await expertiseService.deleteExpertise(req.params.id as string);
       res.json({ success: true });
-    } catch (error: unknown) {
+    } catch {
       res.status(500).json({ success: false, error: { message: "خطا" } });
     }
   }

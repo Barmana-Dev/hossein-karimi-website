@@ -21,6 +21,7 @@ export class ArticlesAdminController {
   async create(req: AuthRequest, res: Response) {
     try {
       const validated = articleCreateSchema.parse(req.body);
+      // 👇 authorName رو پاس نده — سرویس خودش ست می‌کنه
       const article = await articlesService.createArticle(validated);
       res.status(201).json({ success: true, data: article });
     } catch (error: unknown) {
@@ -65,6 +66,8 @@ export class ArticlesAdminController {
     try {
       const id = req.params.id as string;
       const validated = articleUpdateSchema.parse(req.body);
+
+      console.log("📥 validated:", validated);
       const article = await articlesService.updateArticle(id, validated);
       res.json({ success: true, data: article });
     } catch (error: unknown) {

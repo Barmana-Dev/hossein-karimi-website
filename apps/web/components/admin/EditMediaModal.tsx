@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, Save, Loader2, AlertCircle } from "lucide-react";
+import { API_URL } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 
 interface MediaItem {
@@ -36,7 +37,7 @@ export function EditMediaModal({ mediaId, onClose, onSuccess }: Props) {
     const fetchMedia = async () => {
       try {
         const res = await fetch(
-          `http://localhost:4000/api/v1/public/media/admin/${mediaId}`,
+          `${API_URL}/public/media/admin/${mediaId}`,
           { credentials: "include" },
         );
         const json = await res.json();
@@ -46,7 +47,7 @@ export function EditMediaModal({ mediaId, onClose, onSuccess }: Props) {
         } else if (isMounted) {
           setError(json.error?.message || "خطا در دریافت اطلاعات");
         }
-      } catch (err) {
+      } catch {
         if (isMounted) setError("خطا در ارتباط با سرور");
       } finally {
         if (isMounted) setIsFetching(false);
@@ -72,7 +73,7 @@ export function EditMediaModal({ mediaId, onClose, onSuccess }: Props) {
     setError(null);
     try {
       const res = await fetch(
-        `http://localhost:4000/api/v1/public/media/admin/${mediaId}`,
+        `${API_URL}/public/media/admin/${mediaId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

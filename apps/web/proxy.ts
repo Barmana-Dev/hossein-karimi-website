@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+// در Next.js 16 نام middleware به proxy تغییر کرده است (رفتار یکسان است)
+export function proxy(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
-  const isLoginPage = request.nextUrl.pathname === "/login"; // 👈 مسیر جدید
+  const isLoginPage = request.nextUrl.pathname === "/login";
 
   // اگر به مسیر ادمین می‌رود و توکن ندارد -> برود به لاگین
   if (isAdminRoute && !token) {
@@ -20,6 +21,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // این Middleware روی مسیرهای ادمین و لاگین اجرا می‌شود
+  // این Proxy روی مسیرهای ادمین و لاگین اجرا می‌شود
   matcher: ["/admin/:path*", "/login"],
 };

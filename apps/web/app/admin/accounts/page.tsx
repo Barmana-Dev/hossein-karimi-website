@@ -103,7 +103,7 @@ export default function AdminAccountsPage() {
       setUsers((prev) => prev.filter((u) => u.id !== deletingUser.id));
       setDeletingUser(null);
       setDeleteError(null);
-    } catch (error) {
+    } catch {
       setDeleteError("خطای شبکه در حذف کاربر");
     } finally {
       setIsDeleting(false);

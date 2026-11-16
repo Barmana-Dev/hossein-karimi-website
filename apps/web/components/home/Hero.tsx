@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/Button";
+import { assetUrl } from "@/lib/api";
 import { Award, ShieldCheck, Scale } from "lucide-react";
 
 interface HeroProps {
@@ -86,11 +87,7 @@ export function Hero({ settings }: HeroProps) {
             {settings?.portraitImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={
-                  settings.portraitImage.startsWith("http")
-                    ? settings.portraitImage
-                    : `http://localhost:4000${settings.portraitImage}`
-                }
+                src={assetUrl(settings.portraitImage)}
                 alt="پرتره رسمی"
                 className="absolute inset-0 w-full h-full object-cover z-[2]"
               />

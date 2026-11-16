@@ -5,6 +5,15 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    rules: {
+      // پارامترهایی که عمداً استفاده نمی‌شوند با _ شروع می‌شوند
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
@@ -12,6 +21,16 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // 👇 خروجی‌های build و کدهای تولیدشده بررسی نمی‌شوند
+    "**/.next/**",
+    "**/dist/**",
+    "apps/api/dist/**",
+    "apps/api/src/generated/**",
+    "apps/api/prisma/migrations/**",
+    "apps/api/uploads/**",
+    "node_modules/**",
+    "**/node_modules/**",
+    "next.config.ts",
   ]),
 ]);
 

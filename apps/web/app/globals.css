@@ -98,6 +98,13 @@
     scroll-behavior: smooth;
   }
 
+  /* 👇 جلوگیری از اسکرول افقی صفحه (بدون ایجاد کانتینر اسکرول برای sticky) */
+  html,
+  body {
+    overflow-x: clip;
+    max-width: 100%;
+  }
+
   body {
     @apply bg-background text-text font-sans antialiased;
     direction: rtl;

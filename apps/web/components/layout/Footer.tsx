@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Mail, Phone, MapPin, SendHorizontal, Loader2 } from "lucide-react";
+import { API_URL } from "@/lib/api";
 import logo from "../../../../public/images/logo.webp";
 import Image from "next/image";
 
@@ -54,7 +55,7 @@ export function Footer() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/v1/public/settings");
+        const res = await fetch(`${API_URL}/public/settings`);
         if (res.ok) {
           const json = await res.json();
           setSettings(json.data);

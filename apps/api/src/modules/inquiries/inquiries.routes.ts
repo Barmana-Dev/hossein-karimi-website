@@ -1,4 +1,5 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import { InquiriesController } from "./inquiries.controller";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware";
 import { AuthRequest } from "../../middleware/auth.middleware";
@@ -6,6 +7,20 @@ import { AuthRequest } from "../../middleware/auth.middleware";
 const router = Router();
 const controller = new InquiriesController();
 const inquiriesController = new InquiriesController();
+
+// 👇 محدودیت برای ثبت فرم تماس (حداکثر ۵ درخواست در ۱۵ دقیقه)
+// فقط روی همین endpoint عمومی اعمال می‌شود تا مسیر دیگری بدون محدودیت نماند.
+const inquiryLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === "production" ? 5 : 100,
+  message: {
+    success: false,
+    error: {
+      message:
+        "تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً بعداً تلاش کنید.",
+    },
+  },
+});
 
 // مسیرهای ادمین
 router.get(
@@ -35,7 +50,7 @@ router.delete(
   (req, res) => inquiriesController.deleteInquiry(req as AuthRequest, res),
 );
 
-// مسیرهای عمومی
-router.post("/", (req, res) => controller.create(req, res));
+// مسیر عمومی (تنها راه ثبت درخواست، همراه با محدودیت)
+router.post("/", inquiryLimiter, (req, res) => controller.create(req, res));
 
 export default router;

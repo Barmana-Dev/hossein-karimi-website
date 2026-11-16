@@ -20,34 +20,35 @@ import profileRoutes from "./modules/profile/profile.routes";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import searchRoutes from "./modules/search/search.routes";
 import profilePublicRoutes from "./modules/profile/profile.public.routes";
-import inquiryRoutes from "./modules/inquiries/inquiries.routes";
 
 dotenv.config();
 
 const app = express();
 
 // ====== تنظیمات CORS ======
+// دامنه‌های مجاز از متغیر محیطی CORS_ORIGINS خوانده می‌شوند (با کاما جدا می‌شوند)
+const allowedOrigins = (
+  process.env.CORS_ORIGINS || "http://localhost:3000"
+)
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: "http://localhost:3000", // آدرس دقیق فرانت‌اند (بدون ستاره)
+    origin(origin, callback) {
+      // درخواست‌های بدون Origin (مثل curl یا سرور) مجازند
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      // بدون هدر CORS پاسخ می‌دهیم تا مرورگر آن را مسدود کند
+      return callback(null, false);
+    },
     credentials: true, // اجازه ارسال کوکی
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
   }),
 );
-
-// 👇 محدودیت برای فرم تماس (حداکثر ۵ درخواست در ۱۵ دقیقه)
-const inquiryLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 دقیقه
-  max: process.env.NODE_ENV === "production" ? 5 : 100, // حداکثر 5 درخواست
-  message: {
-    success: false,
-    error: {
-      message:
-        "تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً بعداً تلاش کنید.",
-    },
-  },
-});
 
 // 👇 محدودیت برای لاگین (حداکثر ۱۰ تلاش در ۱۵ دقیقه)
 const loginLimiter = rateLimit({
@@ -61,8 +62,7 @@ const loginLimiter = rateLimit({
   },
 });
 
-// اعمال محدودیت‌ها
-app.use("/api/v1/public/inquiries", inquiryLimiter);
+// اعمال محدودیت‌ها (محدودیت فرم تماس روی خودِ endpoint ثبت درخواست اعمال می‌شود)
 app.use("/api/v1/auth/login", loginLimiter);
 
 // 👇 تنظیمات امنیتی برای نمایش عکس‌ها (بدون تداخل با CORS)
@@ -88,7 +88,6 @@ app.use("/api/v1/public/expertise", expertiseRoutes);
 app.use("/api/v1/public/inquiries", inquiriesRoutes);
 app.use("/api/v1/admin/dashboard", dashboardRoutes);
 app.use("/api/v1/admin/search", searchRoutes);
-app.use("/api/v1", inquiryRoutes);
 // مسیر مدیریتی (برای پنل ادمین)
 app.use("/api/v1/admin/settings", profileRoutes);
 
@@ -100,7 +99,7 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/api/v1/public/media", mediaRoutes);
 
 // ==================== مدیریت خطای سراسری ====================
-app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   // چون err از نوع unknown است، باید بررسی کنیم که آیا یک Error است یا نه
   let message = "خطای داخلی سرور رخ داده است.";
   let status = 500;

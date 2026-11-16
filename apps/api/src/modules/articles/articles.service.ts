@@ -31,6 +31,7 @@ export class ArticlesService {
     category: string;
     status: string;
     readTime?: number;
+    coverImage?: string | null;
   }) {
     return prisma.article.create({
       data: {
@@ -60,13 +61,15 @@ export class ArticlesService {
       category?: string;
       status?: string;
       readTime?: number;
+      coverImage?: string | null;
     },
   ) {
     return prisma.article.update({
       where: { id },
       data: {
         ...data,
-        // اگر وضعیت به published تغییر کرد و قبلاً منتشر نشده بود
+        // اگه coverImage ارسال شده، ذخیره کن (حتی اگه null باشه)
+        ...(data.coverImage !== undefined && { coverImage: data.coverImage }),
         ...(data.status === "published" && { publishedAt: new Date() }),
       },
     });

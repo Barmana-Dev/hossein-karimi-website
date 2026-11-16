@@ -28,6 +28,15 @@
 
 # production
 /build
+/dist
+**/dist/
+apps/api/dist/
+
+# uploaded files
+apps/api/uploads/
+
+# generated code
+apps/api/src/generated/
 
 # misc
 .DS_Store

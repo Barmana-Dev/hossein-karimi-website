@@ -82,6 +82,7 @@ export default function EditArticlePage() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    console.log("📤 Sending formData:", formData);
     try {
       const res = await fetch(`${API_URL}/public/articles/admin/${id}`, {
         method: "PATCH",
@@ -239,7 +240,13 @@ export default function EditArticlePage() {
                   alt="Cover"
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-primary/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="absolute inset-0 bg-primary/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => setIsMediaPickerOpen(true)}
+                    className="px-4 py-2 bg-white text-primary rounded-lg text-xs font-bold"
+                  >
+                    تغییر عکس
+                  </button>
                   <button
                     onClick={() => setFormData({ ...formData, coverImage: "" })}
                     className="px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold"

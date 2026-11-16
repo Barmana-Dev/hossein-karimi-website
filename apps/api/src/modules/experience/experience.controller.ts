@@ -35,7 +35,7 @@ export class ExperienceController {
           .status(404)
           .json({ success: false, error: { message: "یافت نشد" } });
       res.json({ success: true, data: exp });
-    } catch (error: unknown) {
+    } catch {
       res.status(500).json({ success: false, error: { message: "خطا" } });
     }
   }
@@ -46,7 +46,7 @@ export class ExperienceController {
         success: true,
         data: await experienceService.getAllExperiencesForAdmin(),
       });
-    } catch (error: unknown) {
+    } catch {
       res.status(500).json({ success: false, error: { message: "خطا" } });
     }
   }
@@ -89,7 +89,7 @@ export class ExperienceController {
           .status(404)
           .json({ success: false, error: { message: "یافت نشد" } });
       res.json({ success: true, data: exp });
-    } catch (error: unknown) {
+    } catch {
       res.status(500).json({ success: false, error: { message: "خطا" } });
     }
   }
@@ -129,7 +129,7 @@ export class ExperienceController {
     try {
       await experienceService.deleteExperience(req.params.id as string);
       res.json({ success: true });
-    } catch (error: unknown) {
+    } catch {
       res.status(500).json({ success: false, error: { message: "خطا" } });
     }
   }

@@ -1,8 +1,21 @@
 import { Request, Response } from "express";
+import { ZodError } from "zod";
 import { MediaItemService } from "./media.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
+import { mediaCreateSchema, mediaUpdateSchema } from "../../validators";
 
 const mediaService = new MediaItemService();
+
+function sendValidationError(res: Response, error: ZodError) {
+  return res.status(400).json({
+    success: false,
+    error: {
+      code: "VALIDATION_ERROR",
+      message: "اطلاعات ارسالی معتبر نیست.",
+      fields: error.flatten().fieldErrors,
+    },
+  });
+}
 
 export class MediaItemController {
   async getAll(req: Request, res: Response) {
@@ -27,9 +40,13 @@ export class MediaItemController {
 
   async adminCreate(req: AuthRequest, res: Response) {
     try {
-      const data = await mediaService.createMedia(req.body);
+      const validated = mediaCreateSchema.parse(req.body);
+      const data = await mediaService.createMedia(validated);
       res.status(201).json({ success: true, data });
     } catch (error: unknown) {
+      if (error instanceof ZodError) {
+        return sendValidationError(res, error);
+      }
       const message = error instanceof Error ? error.message : "خطای ناشناخته";
       res.status(500).json({ success: false, error: { message } });
     }
@@ -51,12 +68,16 @@ export class MediaItemController {
 
   async adminUpdate(req: AuthRequest, res: Response) {
     try {
+      const validated = mediaUpdateSchema.parse(req.body);
       const data = await mediaService.updateMedia(
         req.params.id as string,
-        req.body,
+        validated,
       );
       res.json({ success: true, data });
     } catch (error: unknown) {
+      if (error instanceof ZodError) {
+        return sendValidationError(res, error);
+      }
       const message = error instanceof Error ? error.message : "خطای ناشناخته";
       res.status(500).json({ success: false, error: { message } });
     }

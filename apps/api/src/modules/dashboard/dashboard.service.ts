@@ -1,7 +1,12 @@
 import { prisma } from "../../config/prisma";
 
+// نقش‌هایی که اجازهٔ دیدن اطلاعات درخواست‌دهندگان را دارند
+const INQUIRY_VIEWER_ROLES = ["SUPER_ADMIN", "INQUIRY_MANAGER"];
+
 export class DashboardService {
   async getStats(role?: string) {
+    const canViewInquiries = !!role && INQUIRY_VIEWER_ROLES.includes(role);
+
     // 👇 INQUIRY_MANAGER فقط آمار درخواست‌ها رو ببینه (نه مقالات و کارگزاری‌ها)
     if (role === "INQUIRY_MANAGER") {
       const newInquiries = await prisma.inquiry.count({
@@ -18,7 +23,6 @@ export class DashboardService {
       };
     }
 
-    // SUPER_ADMIN و EDITOR همه چیز رو ببینن
     const [
       publishedArticles,
       draftArticles,
@@ -30,17 +34,20 @@ export class DashboardService {
       prisma.article.count({ where: { status: "draft" } }),
       prisma.inquiry.count({ where: { status: "new" } }),
       prisma.agency.count(),
-      prisma.inquiry.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 4,
-        select: {
-          id: true,
-          fullName: true,
-          subject: true,
-          status: true,
-          createdAt: true,
-        },
-      }),
+      // 👇 نام و موضوع درخواست‌دهندگان فقط برای نقش‌های مجاز برگردانده می‌شود
+      canViewInquiries
+        ? prisma.inquiry.findMany({
+            orderBy: { createdAt: "desc" },
+            take: 4,
+            select: {
+              id: true,
+              fullName: true,
+              subject: true,
+              status: true,
+              createdAt: true,
+            },
+          })
+        : Promise.resolve([]),
     ]);
 
     return {

@@ -2,24 +2,13 @@ import { z } from "zod";
 
 // ===== Experience =====
 export const experienceCreateSchema = z.object({
-  slug: z
-    .string()
-    .min(1, "اسلاگ الزامی است")
-    .max(100, "اسلاگ حداکثر ۱۰۰ کاراکتر"),
-  title: z
-    .string()
-    .min(1, "عنوان الزامی است")
-    .max(200, "عنوان حداکثر ۲۰۰ کاراکتر"),
+  slug: z.string().min(1, "اسلاگ الزامی است").max(100),
+  title: z.string().min(1, "عنوان الزامی است").max(200),
   organization: z.string().min(1, "نهاد الزامی است").max(200),
-  category: z.enum(
-    ["customs", "legal", "management", "education", "business"],
-    {
-      message: "دسته‌بندی نامعتبر است",
-    },
-  ),
+  category: z.enum(["customs", "legal", "management", "education", "business"]),
   role: z.string().min(1, "سمت الزامی است").max(100),
   description: z.string().min(1, "توضیحات الزامی است"),
-  status: z.enum(["published", "draft"], { message: "وضعیت نامعتبر است" }),
+  status: z.enum(["published", "draft"]),
   startDate: z.string().datetime().nullable().optional(),
   endDate: z.string().datetime().nullable().optional(),
 });
@@ -32,16 +21,18 @@ export const articleCreateSchema = z.object({
   title: z.string().min(1, "عنوان الزامی است").max(200),
   excerpt: z.string().min(1, "خلاصه الزامی است"),
   body: z.string().min(1, "متن مقاله الزامی است"),
-  authorName: z.string().min(1, "نام نویسنده الزامی است").max(100),
   category: z.string().min(1, "دسته‌بندی الزامی است").max(100),
   readTime: z
     .number()
     .int()
     .min(1, "زمان مطالعه باید حداقل ۱ دقیقه باشد")
     .max(120),
-  status: z.enum(["published", "draft"], { message: "وضعیت نامعتبر است" }),
+  status: z.enum(["published", "review", "draft"], {
+    message: "وضعیت نامعتبر است",
+  }),
   publishedAt: z.string().datetime().nullable().optional(),
   coverImage: z.string().nullable().optional(),
+  // 👇 authorName حذف شد (بک‌اند خودش ست می‌کنه)
 });
 
 export const articleUpdateSchema = articleCreateSchema.partial();

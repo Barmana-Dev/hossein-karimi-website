@@ -7,8 +7,10 @@ import {
   Image as ImageIcon,
   Loader2,
   CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { API_URL, assetUrl } from "@/lib/api";
 
 interface Asset {
   id: string;
@@ -25,23 +27,25 @@ export function MediaPicker({ onSelect, onClose }: MediaPickerProps) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 👇 تابع fetchAssets به داخل useEffect منتقل شد
   useEffect(() => {
     let isMounted = true;
     const loadAssets = async () => {
       try {
-        const res = await fetch(
-          "http://localhost:4000/api/v1/public/media/list",
-          { credentials: "include" },
-        );
+        const res = await fetch(`${API_URL}/public/media/list`, {
+          credentials: "include",
+        });
         if (res.ok && isMounted) {
           const json = await res.json();
           setAssets(json.data);
+        } else if (isMounted) {
+          setError("دریافت کتابخانه رسانه ناموفق بود.");
         }
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        console.error(err);
+        if (isMounted) setError("ارتباط با سرور برقرار نشد.");
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -52,32 +56,33 @@ export function MediaPicker({ onSelect, onClose }: MediaPickerProps) {
     };
   }, []);
 
-  // 👇 تابع آپلود (بیرون از useEffect، چون به رویداد کلیک متصل است)
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsUploading(true);
+    setError(null);
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-      const res = await fetch(
-        "http://localhost:4000/api/v1/public/media/upload",
-        {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-        },
-      );
-      if (res.ok) {
-        const json = await res.json();
+      const res = await fetch(`${API_URL}/public/media/upload`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.data?.urlOrKey) {
         onSelect(json.data.urlOrKey);
+      } else {
+        setError(json?.error?.message || "آپلود تصویر انجام نشد.");
       }
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
+      setError("آپلود تصویر انجام نشد.");
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -90,7 +95,7 @@ export function MediaPicker({ onSelect, onClose }: MediaPickerProps) {
           <div className="flex items-center gap-3">
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/gif"
               ref={fileInputRef}
               onChange={handleUpload}
               className="hidden"
@@ -119,6 +124,11 @@ export function MediaPicker({ onSelect, onClose }: MediaPickerProps) {
 
         {/* Body */}
         <div className="p-6 overflow-y-auto flex-1">
+          {error && (
+            <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-700 text-sm flex items-center gap-2">
+              <AlertCircle size={16} /> {error}
+            </div>
+          )}
           {isLoading ? (
             <div className="flex justify-center py-10">
               <Loader2 className="animate-spin text-accent" size={40} />
@@ -133,7 +143,7 @@ export function MediaPicker({ onSelect, onClose }: MediaPickerProps) {
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`http://localhost:4000${asset.urlOrKey}`}
+                    src={assetUrl(asset.urlOrKey)}
                     alt={asset.altText || "تصویر"}
                     className="w-full h-full object-cover"
                   />

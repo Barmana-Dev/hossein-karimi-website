@@ -51,7 +51,7 @@ export class InquiriesController {
           .status(404)
           .json({ success: false, error: { message: "یافت نشد" } });
       res.json({ success: true, data });
-    } catch (error: unknown) {
+    } catch {
       res.status(500).json({ success: false, error: { message: "خطا" } });
     }
   }
@@ -64,7 +64,7 @@ export class InquiriesController {
         req.body,
       );
       res.json({ success: true, data });
-    } catch (error: unknown) {
+    } catch {
       res.status(500).json({ success: false, error: { message: "خطا" } });
     }
   }

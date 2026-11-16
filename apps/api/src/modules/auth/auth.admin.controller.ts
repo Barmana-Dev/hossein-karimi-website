@@ -3,6 +3,9 @@ import { prisma } from "../../config/prisma";
 import { AuthRequest } from "../../middleware/auth.middleware";
 import bcrypt from "bcryptjs";
 
+// نقش‌های مجاز سیستم
+export const ALLOWED_ROLES = ["SUPER_ADMIN", "EDITOR", "INQUIRY_MANAGER"];
+
 export class AuthAdminController {
   // دریافت لیست کاربران
   async getAllUsers(req: AuthRequest, res: Response) {
@@ -27,6 +30,20 @@ export class AuthAdminController {
   async createUser(req: AuthRequest, res: Response) {
     try {
       const { name, email, password, role, isActive } = req.body;
+
+      if (!name || !email || !password) {
+        return res.status(400).json({
+          success: false,
+          error: { message: "نام، ایمیل و رمز عبور الزامی است" },
+        });
+      }
+
+      if (!ALLOWED_ROLES.includes(role)) {
+        return res.status(400).json({
+          success: false,
+          error: { message: "نقش انتخاب‌شده معتبر نیست" },
+        });
+      }
 
       const existing = await prisma.adminUser.findUnique({ where: { email } });
       if (existing) {
@@ -82,7 +99,7 @@ export class AuthAdminController {
           .status(404)
           .json({ success: false, error: { message: "کاربر یافت نشد" } });
       res.json({ success: true, data: user });
-    } catch (error: unknown) {
+    } catch {
       res.status(500).json({ success: false, error: { message: "خطا" } });
     }
   }
@@ -92,6 +109,13 @@ export class AuthAdminController {
     try {
       const id = req.params.id as string;
       const { name, email, role, isActive, password } = req.body;
+
+      if (role !== undefined && !ALLOWED_ROLES.includes(role)) {
+        return res.status(400).json({
+          success: false,
+          error: { message: "نقش انتخاب‌شده معتبر نیست" },
+        });
+      }
 
       interface AdminUserUpdate {
         name?: string;

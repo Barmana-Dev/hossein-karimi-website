@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { API_URL } from "@/lib/api";
-import DOMPurify from "isomorphic-dompurify";
+import { API_URL, assetUrl } from "@/lib/api";
 import { sanitizeHtml } from "@/lib/sanitize-html";
-
 import {
   ArrowRight,
   Clock,
@@ -27,6 +25,7 @@ interface Article {
   category: string;
   readTime: number;
   publishedAt: string;
+  coverImage: string | null;
 }
 
 interface RelatedArticle {
@@ -49,7 +48,6 @@ async function getArticle(slug: string): Promise<Article | null> {
   }
 }
 
-// 👇 گرفتن مقالات مرتبط از دیتابیس
 async function getRelatedArticles(
   currentSlug: string,
 ): Promise<RelatedArticle[]> {
@@ -155,11 +153,21 @@ export default async function ArticleDetailPage({
               </div>
             </div>
 
-            {/* Cover */}
-            <div className="w-full aspect-[21/9] rounded-2xl bg-gradient-to-br from-[#E8EDF3] to-[#D5DEE8] mb-12 flex items-center justify-center text-[#8A97A6] text-sm border border-border relative overflow-hidden">
-              <div className="absolute inset-0 bg-primary/5" />
-              <span className="relative z-10">تصویر شاخص مقاله</span>
-            </div>
+            {article.coverImage ? (
+              <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden mb-12 border border-border relative bg-gray-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={assetUrl(article.coverImage)}
+                  alt={article.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-full aspect-[16/9] rounded-2xl bg-gradient-to-br from-[#E8EDF3] to-[#D5DEE8] mb-12 flex items-center justify-center text-[#8A97A6] text-sm border border-border relative overflow-hidden">
+                <div className="absolute inset-0 bg-primary/5" />
+                <span className="relative z-10">تصویر شاخص مقاله</span>
+              </div>
+            )}
 
             {/* Content */}
             <div className="prose prose-slate prose-lg max-w-none text-foreground-muted leading-[2.2] text-justify">
@@ -167,7 +175,9 @@ export default async function ArticleDetailPage({
                 {article.excerpt}
               </p>
               <div
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.body) }}
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeHtml(article.body),
+                }}
               />
             </div>
 
@@ -219,7 +229,7 @@ export default async function ArticleDetailPage({
               </ul>
             </div>
 
-            {/* 👇 مقالات مرتبط داینامیک از دیتابیس */}
+            {/* 👇 مقالات مرتبط */}
             {relatedArticles.length > 0 && (
               <div className="bg-primary text-white rounded-2xl p-6 relative overflow-hidden">
                 <div className="absolute -right-10 -top-10 w-32 h-32 bg-accent/20 rounded-full blur-2xl pointer-events-none" />

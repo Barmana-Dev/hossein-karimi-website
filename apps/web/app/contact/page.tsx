@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { API_URL } from "@/lib/api";
-import DOMPurify from "isomorphic-dompurify";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import {
   Mail,
@@ -214,7 +213,10 @@ export default function ContactPage() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-primary">
+                      <label
+                        htmlFor="fullName"
+                        className="text-xs font-bold text-primary"
+                      >
                         نام و نام خانوادگی{" "}
                         <span className="text-red-500">*</span>
                       </label>
@@ -222,6 +224,7 @@ export default function ContactPage() {
                         name="fullName"
                         id="fullName"
                         type="text"
+                        autoComplete="name"
                         className={`w-full bg-transparent border-b-2 ${fieldErrors.fullName ? "border-red-500" : "border-border"} py-2 text-sm focus:outline-none focus:border-accent transition-colors`}
                         placeholder="مثلاً: علی محمدی"
                       />
@@ -232,13 +235,17 @@ export default function ContactPage() {
                       )}
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-primary">
+                      <label
+                        htmlFor="tel"
+                        className="text-xs font-bold text-primary"
+                      >
                         شماره تماس
                       </label>
                       <input
                         name="phone"
                         id="tel"
                         type="tel"
+                        autoComplete="tel"
                         className={`w-full bg-transparent border-b-2 ${fieldErrors.phone ? "border-red-500" : "border-border"} py-2 text-sm focus:outline-none focus:border-accent transition-colors`}
                         placeholder="۰۹۱۲۳۴۵۶۷۸۹"
                       />
@@ -252,13 +259,17 @@ export default function ContactPage() {
 
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-primary">
+                      <label
+                        htmlFor="email"
+                        className="text-xs font-bold text-primary"
+                      >
                         ایمیل
                       </label>
                       <input
                         name="email"
                         type="email"
                         id="email"
+                        autoComplete="email"
                         className={`w-full bg-transparent border-b-2 ${fieldErrors.email ? "border-red-500" : "border-border"} py-2 text-sm focus:outline-none focus:border-accent transition-colors`}
                         placeholder="name@example.com"
                       />
@@ -269,7 +280,10 @@ export default function ContactPage() {
                       )}
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-primary">
+                      <label
+                        htmlFor="type"
+                        className="text-xs font-bold text-primary"
+                      >
                         موضوع درخواست <span className="text-red-500">*</span>
                       </label>
                       <select
@@ -288,7 +302,10 @@ export default function ContactPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-primary">
+                    <label
+                      htmlFor="subject"
+                      className="text-xs font-bold text-primary"
+                    >
                       عنوان پیام <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -306,7 +323,10 @@ export default function ContactPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-primary">
+                    <label
+                      htmlFor="message"
+                      className="text-xs font-bold text-primary"
+                    >
                       پیام شما <span className="text-red-500">*</span>
                     </label>
                     <textarea

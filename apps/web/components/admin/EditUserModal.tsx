@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, Save, Loader2, AlertCircle } from "lucide-react";
+import { API_URL } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 
 interface AdminUser {
@@ -38,7 +39,7 @@ export function EditUserModal({ userId, onClose, onSuccess }: Props) {
     const fetchUser = async () => {
       try {
         const res = await fetch(
-          `http://localhost:4000/api/v1/auth/admin/users/${userId}`,
+          `${API_URL}/auth/admin/users/${userId}`,
           {
             credentials: "include",
           },
@@ -55,7 +56,7 @@ export function EditUserModal({ userId, onClose, onSuccess }: Props) {
           if (isMounted)
             setError(json.error?.message || "خطا در دریافت اطلاعات");
         }
-      } catch (err) {
+      } catch {
         if (isMounted) setError("خطا در ارتباط با سرور");
       } finally {
         if (isMounted) setIsFetching(false);
@@ -84,7 +85,7 @@ export function EditUserModal({ userId, onClose, onSuccess }: Props) {
     setError(null);
     try {
       const res = await fetch(
-        `http://localhost:4000/api/v1/auth/admin/users/${userId}`,
+        `${API_URL}/auth/admin/users/${userId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

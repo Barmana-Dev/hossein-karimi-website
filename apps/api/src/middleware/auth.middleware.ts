@@ -46,7 +46,7 @@ export const requireAuth = async (
     // 👇 نقش رو از دیتابیس بخون (نه از توکن) تا تغییر نقش فوری اعمال بشه
     req.user = { userId: user.id, role: user.role };
     next();
-  } catch (error) {
+  } catch {
     return res.status(401).json({
       success: false,
       error: { message: "نشست شما منقضی شده است. دوباره وارد شوید." },

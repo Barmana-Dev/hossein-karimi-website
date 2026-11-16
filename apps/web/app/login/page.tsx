@@ -63,9 +63,17 @@ function LoginForm() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2 group">
-          <label className="text-xs font-bold text-white/90 block">ایمیل</label>
+          <label
+            htmlFor="login-email"
+            className="text-xs font-bold text-white/90 block"
+          >
+            ایمیل
+          </label>
           <input
+            id="login-email"
+            name="email"
             type="email"
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -76,11 +84,17 @@ function LoginForm() {
         </div>
 
         <div className="space-y-2 group">
-          <label className="text-xs font-bold text-white/90 block">
+          <label
+            htmlFor="login-password"
+            className="text-xs font-bold text-white/90 block"
+          >
             رمز عبور
           </label>
           <input
+            id="login-password"
+            name="password"
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required

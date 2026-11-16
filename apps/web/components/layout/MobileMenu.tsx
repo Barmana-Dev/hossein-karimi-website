@@ -10,26 +10,38 @@ interface MobileMenuProps {
   open: boolean;
   onClose: () => void;
   items: { label: string; href: string }[];
+  triggerRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
-export function MobileMenu({ open, onClose, items }: MobileMenuProps) {
+export function MobileMenu({
+  open,
+  onClose,
+  items,
+  triggerRef,
+}: MobileMenuProps) {
   const pathname = usePathname();
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const wasOpenRef = useRef(false);
 
-  // 👇 بستن با Escape + قفل اسکرول
+  // 👇 قفل اسکرول + فوکوس اولیه + بازگرداندن فوکوس به دکمه منو پس از بستن
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
+      wasOpenRef.current = true;
       // فوکوس روی دکمه بستن
       closeButtonRef.current?.focus();
     } else {
       document.body.style.overflow = "";
+      if (wasOpenRef.current) {
+        wasOpenRef.current = false;
+        triggerRef?.current?.focus();
+      }
     }
     return () => {
       document.body.style.overflow = "";
     };
-  }, [open]);
+  }, [open, triggerRef]);
 
   // 👇 مدیریت کلید Escape
   useEffect(() => {
@@ -84,12 +96,15 @@ export function MobileMenu({ open, onClose, items }: MobileMenuProps) {
           open ? "opacity-100" : "opacity-0 pointer-events-none",
         )}
       />
-      {/* Drawer */}
+      {/* Drawer — در حالت بسته از صفحه‌خوان و ترتیب فوکوس خارج است */}
       <div
         ref={drawerRef}
+        id="mobile-menu-drawer"
         role="dialog"
-        aria-modal="true"
+        aria-modal={open ? "true" : undefined}
         aria-label="منوی موبایل"
+        aria-hidden={!open}
+        inert={!open}
         className={cn(
           "fixed top-0 right-0 bottom-0 z-[120] w-[300px] max-w-[85vw] bg-white shadow-2xl transition-transform duration-300 lg:hidden flex flex-col",
           open ? "translate-x-0" : "translate-x-full",

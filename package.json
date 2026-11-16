@@ -6,7 +6,8 @@
     "dev": "cd apps/web && next dev",
     "build": "cd apps/web && next build",
     "start": "cd apps/web && next start",
-    "lint": "eslint"
+    "lint": "eslint apps/web apps/api/src",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.20",

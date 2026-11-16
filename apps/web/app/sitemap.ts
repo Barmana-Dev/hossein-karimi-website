@@ -1,14 +1,16 @@
 import { MetadataRoute } from "next";
+import { API_URL, SITE_URL } from "@/lib/api";
 
 async function getData() {
-  const baseUrl = "https://hosseinkarimi.com";
-  const apiBase =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1/public";
+  const baseUrl = SITE_URL;
+  const apiBase = API_URL;
 
   const [articlesRes, agenciesRes, expertisesRes] = await Promise.all([
-    fetch(`${apiBase}/articles`, { cache: "no-store" }).catch(() => null),
-    fetch(`${apiBase}/network`, { cache: "no-store" }).catch(() => null),
-    fetch(`${apiBase}/expertise`, { cache: "no-store" }).catch(() => null),
+    fetch(`${apiBase}/public/articles`, { cache: "no-store" }).catch(() => null),
+    fetch(`${apiBase}/public/network`, { cache: "no-store" }).catch(() => null),
+    fetch(`${apiBase}/public/expertise`, { cache: "no-store" }).catch(
+      () => null,
+    ),
   ]);
 
   const articles = articlesRes?.ok ? (await articlesRes.json()).data : [];

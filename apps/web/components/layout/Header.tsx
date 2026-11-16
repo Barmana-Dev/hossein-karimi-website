@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { API_URL } from "@/lib/api";
 import { MobileMenu } from "./MobileMenu";
 
 import logo from "../../../../public/images/logo.webp";
@@ -39,6 +40,7 @@ const LIGHT_BG_PAGES = [
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
 
   const [siteInfo, setSiteInfo] = useState({
@@ -49,7 +51,7 @@ export function Header() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch("http://localhost:4000/api/v1/public/settings");
+        const res = await fetch(`${API_URL}/public/settings`);
         if (res.ok) {
           const json = await res.json();
           setSiteInfo({
@@ -111,6 +113,7 @@ export function Header() {
           <Link href="/" className="flex items-center gap-3.5 shrink-0">
             <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-accent-light font-black text-lg shadow-[0_6px_18px_rgba(15,30,51,.25)] relative overflow-hidden">
               <Image
+                loading="eager"
                 src={logo}
                 alt="لوگوی سایت"
                 className="w-full h-full object-cover"
@@ -180,8 +183,11 @@ export function Header() {
               درخواست ارتباط
             </Button>
             <button
+              ref={menuButtonRef}
               onClick={() => setMenuOpen(true)}
               aria-label="باز کردن منو"
+              aria-expanded={menuOpen}
+              aria-controls="mobile-menu-drawer"
               className={cn(
                 "lg:hidden p-2 text-2xl transition-colors",
                 isDarkHeader || isTransparent ? "text-white" : "text-primary",
@@ -197,6 +203,7 @@ export function Header() {
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         items={navItems}
+        triggerRef={menuButtonRef}
       />
     </>
   );
