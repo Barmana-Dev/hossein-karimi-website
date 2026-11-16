@@ -37,8 +37,9 @@ interface RelatedArticle {
 
 async function getArticle(slug: string): Promise<Article | null> {
   try {
+    // 👇 بدون کش، تا تغییر تصویر شاخص بلافاصله بعد از ذخیره دیده شود
     const res = await fetch(`${API_URL}/public/articles/${slug}`, {
-      next: { revalidate: 60 },
+      cache: "no-store",
     });
     if (!res.ok) return null;
     const json = await res.json();
@@ -53,7 +54,7 @@ async function getRelatedArticles(
 ): Promise<RelatedArticle[]> {
   try {
     const res = await fetch(`${API_URL}/public/articles`, {
-      next: { revalidate: 60 },
+      cache: "no-store",
     });
     if (!res.ok) return [];
     const json = await res.json();
