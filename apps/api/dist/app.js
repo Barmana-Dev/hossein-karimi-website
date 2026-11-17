@@ -12,6 +12,7 @@ const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 const swagger_json_1 = __importDefault(require("./swagger.json"));
 const env_1 = require("./config/env");
 const prisma_1 = require("./config/prisma");
+const error_notifier_1 = require("./lib/error-notifier");
 // ایمپورت مسیرها
 const auth_routes_1 = __importDefault(require("./modules/auth/auth.routes"));
 const articles_routes_1 = __importDefault(require("./modules/articles/articles.routes"));
@@ -142,6 +143,10 @@ app.use((err, req, res, _next) => {
     else {
         console.error("🔴 Server Error:", err instanceof Error ? err.stack : err);
     }
+    // خطاهای ۵xx به وب‌هوک مانیتورینگ (در صورت تنظیم) ارسال می‌شوند
+    if (status >= 500) {
+        (0, error_notifier_1.notifyError)(err, { path: req.path, method: req.method });
+    }
     // در پروداکشن پیام داخلی لو نمی‌رود
     const finalMessage = env_1.config.isProduction
         ? "خطای داخلی سرور رخ داده است."
@@ -157,6 +162,15 @@ if (env_1.config.enableSwagger) {
         swaggerOptions: { persistAuthorization: true },
     }));
 }
+// ==================== خطاهای مهارنشده ====================
+process.on("unhandledRejection", (reason) => {
+    console.error("🔴 Unhandled Rejection:", reason);
+    (0, error_notifier_1.notifyError)(reason, { type: "unhandledRejection" });
+});
+process.on("uncaughtException", (error) => {
+    console.error("🔴 Uncaught Exception:", error);
+    (0, error_notifier_1.notifyError)(error, { type: "uncaughtException" });
+});
 // ==================== اجرای سرور ====================
 app.listen(env_1.config.port, () => {
     console.log(`🚀 API [${env_1.config.appEnv}] روی http://localhost:${env_1.config.port} اجرا شد`);

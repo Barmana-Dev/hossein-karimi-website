@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { ExpertiseService } from "./expertise.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
+import { buildMeta, getPageParams } from "../../lib/pagination";
 import { Prisma } from "../../generated/prisma/client";
 import { expertiseCreateSchema, expertiseUpdateSchema } from "../../validators";
 import { ZodError } from "zod";
@@ -34,8 +35,26 @@ export class ExpertiseController {
 
   async adminGetAll(req: AuthRequest, res: Response) {
     try {
-      const data = await expertiseService.getAllExpertisesForAdmin();
-      res.json({ success: true, data });
+      const params = getPageParams(req);
+      const { items, total } =
+        await expertiseService.getAllExpertisesForAdmin(
+          params.paginated
+            ? {
+                skip: params.skip,
+                take: params.limit,
+                search: params.search,
+                status: params.status ?? undefined,
+              }
+            : { search: params.search, status: params.status ?? undefined },
+        );
+
+      res.json({
+        success: true,
+        data: items,
+        meta: params.paginated
+          ? buildMeta(total, params.page, params.limit)
+          : undefined,
+      });
     } catch {
       res.status(500).json({ success: false, error: { message: "خطا" } });
     }

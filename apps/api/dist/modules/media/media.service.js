@@ -9,10 +9,25 @@ class MediaItemService {
             orderBy: { happenedAt: "desc" },
         });
     }
-    async getAllMediaForAdmin() {
-        return prisma_1.prisma.mediaItem.findMany({
-            orderBy: { createdAt: "desc" },
-        });
+    async getAllMediaForAdmin(opts = {}) {
+        const where = {
+            ...(opts.status ? { status: opts.status } : {}),
+            ...(opts.type ? { type: opts.type } : {}),
+            ...(opts.search
+                ? {
+                    title: { contains: opts.search, mode: "insensitive" },
+                }
+                : {}),
+        };
+        const [items, total] = await Promise.all([
+            prisma_1.prisma.mediaItem.findMany({
+                where,
+                orderBy: { createdAt: "desc" },
+                ...(opts.take ? { skip: opts.skip, take: opts.take } : {}),
+            }),
+            prisma_1.prisma.mediaItem.count({ where }),
+        ]);
+        return { items, total };
     }
     async createMedia(data) {
         return prisma_1.prisma.mediaItem.create({

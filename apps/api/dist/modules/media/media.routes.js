@@ -1,10 +1,45 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const multer_1 = __importDefault(require("multer"));
+const node_fs_1 = require("node:fs");
+const node_path_1 = __importDefault(require("node:path"));
 const media_controller_1 = require("./media.controller");
 const media_item_controller_1 = require("./media-item.controller");
 const auth_middleware_1 = require("../../middleware/auth.middleware");
@@ -55,8 +90,44 @@ const uploadSingle = (req, res, next) => {
         return res.status(400).json({ success: false, error: { message } });
     });
 };
+// 👇 تغییر اندازه و تبدیل به WebP بعد از آپلود (اگر sharp در دسترس باشد)
+const optimizeUpload = async (req, res, next) => {
+    const file = req.file;
+    // GIF را دست نمی‌زنیم تا انیمیشن حفظ شود
+    if (!file || file.mimetype === "image/gif")
+        return next();
+    try {
+        const { default: sharp } = await Promise.resolve().then(() => __importStar(require("sharp")));
+        const targetPath = node_path_1.default.join(env_1.config.uploadsDir, node_path_1.default.basename(file.filename, node_path_1.default.extname(file.filename)) + ".webp");
+        await sharp(file.path)
+            .rotate()
+            .resize({
+            width: 1920,
+            height: 1920,
+            fit: "inside",
+            withoutEnlargement: true,
+        })
+            .webp({ quality: 82 })
+            .toFile(targetPath);
+        await node_fs_1.promises.unlink(file.path).catch(() => undefined);
+        const stats = await node_fs_1.promises.stat(targetPath);
+        req.file = {
+            ...file,
+            path: targetPath,
+            filename: node_path_1.default.basename(targetPath),
+            destination: env_1.config.uploadsDir,
+            mimetype: "image/webp",
+            size: stats.size,
+        };
+    }
+    catch (error) {
+        // اگر فشرده‌سازی شکست خورد، فایل اصلی بدون تغییر آپلود می‌شود
+        console.warn("⚠️ فشرده‌سازی تصویر انجام نشد:", error instanceof Error ? error.message : error);
+    }
+    return next();
+};
 // ====== ۱. مسیرهای آپلود و کتابخانه رسانه ======
-router.post("/upload", auth_middleware_1.requireAuth, (0, auth_middleware_1.requireRole)(["SUPER_ADMIN", "EDITOR"]), uploadSingle, (req, res) => uploadController.upload(req, res));
+router.post("/upload", auth_middleware_1.requireAuth, (0, auth_middleware_1.requireRole)(["SUPER_ADMIN", "EDITOR"]), uploadSingle, (req, res, next) => void optimizeUpload(req, res, next), (req, res) => uploadController.upload(req, res));
 router.get("/list", auth_middleware_1.requireAuth, (0, auth_middleware_1.requireRole)(["SUPER_ADMIN", "EDITOR"]), (req, res) => uploadController.getAll(req, res));
 router.delete("/asset/:id", auth_middleware_1.requireAuth, (0, auth_middleware_1.requireRole)(["SUPER_ADMIN", "EDITOR"]), (req, res) => uploadController.deleteAsset(req, res)); // 👈 مسیر اصلاح شد
 // ====== ۲. مسیرهای رسانه و رویدادها (ادمین) ======

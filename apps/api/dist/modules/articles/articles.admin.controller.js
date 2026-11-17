@@ -5,12 +5,27 @@ const articles_service_1 = require("./articles.service");
 const client_1 = require("../../generated/prisma/client");
 const validators_1 = require("../../validators");
 const zod_1 = require("zod");
+const pagination_1 = require("../../lib/pagination");
 const articlesService = new articles_service_1.ArticlesService();
 class ArticlesAdminController {
     async getAll(req, res) {
         try {
-            const articles = await articlesService.getAllArticlesForAdmin();
-            res.json({ success: true, data: articles });
+            const params = (0, pagination_1.getPageParams)(req);
+            const { items, total } = await articlesService.getAllArticlesForAdmin(params.paginated
+                ? {
+                    skip: params.skip,
+                    take: params.limit,
+                    search: params.search,
+                    status: params.status ?? undefined,
+                }
+                : { search: params.search, status: params.status ?? undefined });
+            res.json({
+                success: true,
+                data: items,
+                meta: params.paginated
+                    ? (0, pagination_1.buildMeta)(total, params.page, params.limit)
+                    : undefined,
+            });
         }
         catch (error) {
             const message = error instanceof Error ? error.message : "خطای ناشناخته";

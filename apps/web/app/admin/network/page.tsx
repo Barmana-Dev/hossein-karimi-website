@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Plus, Search, Edit, Trash2, Loader2, ShieldCheck } from "lucide-react";
+import { AdminPagination } from "@/components/admin/AdminPagination";
+import { useAdminList } from "@/lib/use-admin-list";
 import { API_URL } from "@/lib/api";
 
 interface Agency {
@@ -15,25 +16,16 @@ interface Agency {
 }
 
 export default function AdminNetworkPage() {
-  const [agencies, setAgencies] = useState<Agency[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-
-  useEffect(() => {
-    const fetchAgencies = async () => {
-      try {
-        const res = await fetch(`${API_URL}/public/network/admin/list`, {
-          credentials: "include",
-        });
-        if (res.ok) setAgencies((await res.json()).data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchAgencies();
-  }, []);
+  const {
+    items: agencies,
+    meta,
+    isLoading,
+    search,
+    setSearch,
+    page,
+    setPage,
+    removeItem,
+  } = useAdminList<Agency>("/public/network/admin/list", { limit: 10 });
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("آیا از حذف مطمئن هستید؟")) return;
@@ -42,15 +34,11 @@ export default function AdminNetworkPage() {
         method: "DELETE",
         credentials: "include",
       });
-      if (res.ok) setAgencies((prev) => prev.filter((a) => a.id !== id));
+      if (res.ok) removeItem(id);
     } catch (error) {
       console.error(error);
     }
   };
-
-  const filtered = agencies.filter(
-    (a) => a.name.includes(searchTerm) || a.field.includes(searchTerm),
-  );
 
   if (isLoading)
     return (
@@ -82,8 +70,9 @@ export default function AdminNetworkPage() {
           <input
             type="text"
             placeholder="جستجو..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            aria-label="جستجوی کارگزاری"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-background border border-border rounded-xl py-2.5 pr-10 pl-4 text-sm focus:outline-none"
           />
           <Search
@@ -94,65 +83,84 @@ export default function AdminNetworkPage() {
       </div>
       <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-        <table className="w-full text-sm text-right">
-          <thead className="bg-background text-foreground-muted text-xs border-b border-border">
-            <tr>
-              <th className="px-6 py-4">نام مجموعه</th>
-              <th className="px-6 py-4">حوزه</th>
-              <th className="px-6 py-4">نوع ارتباط</th>
-              <th className="px-6 py-4">وضعیت</th>
-              <th className="px-6 py-4 text-center">عملیات</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {filtered.map((agency) => (
-              <tr key={agency.id} className="hover:bg-background/50 group">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-accent/10 text-accent flex items-center justify-center font-black text-lg">
-                      {agency.name.charAt(0)}
-                    </div>
-                    <div className="font-bold text-primary">{agency.name}</div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-foreground-muted">
-                  {agency.field}
-                </td>
-                <td className="px-6 py-4">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-background border border-border text-primary">
-                    <ShieldCheck size={12} className="text-accent" />
-                    {agency.relationType}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${agency.status === "published" ? "bg-green-50 text-green-700" : "bg-orange-50 text-orange-700"}`}
-                  >
-                    {agency.status === "published" ? "منتشر شده" : "پیش‌نویس"}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center justify-center gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                    <Link
-                      href={`/admin/network/${agency.id}/edit`}
-                      className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"
-                    >
-                      <Edit size={14} />
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(agency.id)}
-                      className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </td>
+          <table className="w-full text-sm text-right">
+            <thead className="bg-background text-foreground-muted text-xs border-b border-border">
+              <tr>
+                <th className="px-6 py-4">نام مجموعه</th>
+                <th className="px-6 py-4">حوزه</th>
+                <th className="px-6 py-4">نوع ارتباط</th>
+                <th className="px-6 py-4">وضعیت</th>
+                <th className="px-6 py-4 text-center">عملیات</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {agencies.map((agency) => (
+                <tr key={agency.id} className="hover:bg-background/50 group">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-accent/10 text-accent flex items-center justify-center font-black text-lg">
+                        {agency.name.charAt(0)}
+                      </div>
+                      <div className="font-bold text-primary">{agency.name}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-foreground-muted">
+                    {agency.field}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-background border border-border text-primary">
+                      <ShieldCheck size={12} className="text-accent" />
+                      {agency.relationType}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${agency.status === "published" ? "bg-green-50 text-green-700" : "bg-orange-50 text-orange-700"}`}
+                    >
+                      {agency.status === "published" ? "منتشر شده" : "پیش‌نویس"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-center gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                      <Link
+                        href={`/admin/network/${agency.id}/edit`}
+                        aria-label={`ویرایش ${agency.name}`}
+                        className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"
+                      >
+                        <Edit size={14} />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(agency.id)}
+                        aria-label={`حذف ${agency.name}`}
+                        className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {agencies.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-6 py-12 text-center text-foreground-muted"
+                  >
+                    کارگزاری‌ای یافت نشد.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
+
+      <AdminPagination
+        page={page}
+        totalPages={meta.totalPages}
+        onChange={setPage}
+      />
     </div>
   );
 }

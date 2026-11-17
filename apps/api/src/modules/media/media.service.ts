@@ -18,10 +18,35 @@ export class MediaItemService {
     });
   }
 
-  async getAllMediaForAdmin() {
-    return prisma.mediaItem.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+  async getAllMediaForAdmin(
+    opts: {
+      skip?: number;
+      take?: number;
+      search?: string;
+      status?: string;
+      type?: string;
+    } = {},
+  ) {
+    const where = {
+      ...(opts.status ? { status: opts.status } : {}),
+      ...(opts.type ? { type: opts.type } : {}),
+      ...(opts.search
+        ? {
+            title: { contains: opts.search, mode: "insensitive" as const },
+          }
+        : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      prisma.mediaItem.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        ...(opts.take ? { skip: opts.skip, take: opts.take } : {}),
+      }),
+      prisma.mediaItem.count({ where }),
+    ]);
+
+    return { items, total };
   }
 
   async createMedia(data: CreateMediaDTO) {

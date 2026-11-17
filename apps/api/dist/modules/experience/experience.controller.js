@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ExperienceController = void 0;
 const experience_service_1 = require("./experience.service");
+const pagination_1 = require("../../lib/pagination");
 const client_1 = require("../../generated/prisma/client");
 const validators_1 = require("../../validators");
 const zod_1 = require("zod");
@@ -36,9 +37,21 @@ class ExperienceController {
     }
     async adminGetAll(req, res) {
         try {
+            const params = (0, pagination_1.getPageParams)(req);
+            const { items, total } = await experienceService.getAllExperiencesForAdmin(params.paginated
+                ? {
+                    skip: params.skip,
+                    take: params.limit,
+                    search: params.search,
+                    status: params.status ?? undefined,
+                }
+                : { search: params.search, status: params.status ?? undefined });
             res.json({
                 success: true,
-                data: await experienceService.getAllExperiencesForAdmin(),
+                data: items,
+                meta: params.paginated
+                    ? (0, pagination_1.buildMeta)(total, params.page, params.limit)
+                    : undefined,
             });
         }
         catch {

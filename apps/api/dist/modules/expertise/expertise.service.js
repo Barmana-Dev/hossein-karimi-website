@@ -14,10 +14,31 @@ class ExpertiseService {
             where: { slug, status: "published" },
         });
     }
-    async getAllExpertisesForAdmin() {
-        return prisma_1.prisma.expertise.findMany({
-            orderBy: { createdAt: "desc" },
-        });
+    async getAllExpertisesForAdmin(opts = {}) {
+        const where = {
+            ...(opts.status ? { status: opts.status } : {}),
+            ...(opts.search
+                ? {
+                    OR: [
+                        {
+                            title: { contains: opts.search, mode: "insensitive" },
+                        },
+                        {
+                            summary: { contains: opts.search, mode: "insensitive" },
+                        },
+                    ],
+                }
+                : {}),
+        };
+        const [items, total] = await Promise.all([
+            prisma_1.prisma.expertise.findMany({
+                where,
+                orderBy: { createdAt: "desc" },
+                ...(opts.take ? { skip: opts.skip, take: opts.take } : {}),
+            }),
+            prisma_1.prisma.expertise.count({ where }),
+        ]);
+        return { items, total };
     }
     async createExpertise(data) {
         return prisma_1.prisma.expertise.create({ data });

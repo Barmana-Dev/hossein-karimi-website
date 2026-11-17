@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MediaItemController = void 0;
 const zod_1 = require("zod");
 const media_service_1 = require("./media.service");
+const pagination_1 = require("../../lib/pagination");
 const validators_1 = require("../../validators");
 const mediaService = new media_service_1.MediaItemService();
 function sendValidationError(res, error) {
@@ -28,8 +29,27 @@ class MediaItemController {
     }
     async adminGetAll(req, res) {
         try {
-            const data = await mediaService.getAllMediaForAdmin();
-            res.json({ success: true, data });
+            const params = (0, pagination_1.getPageParams)(req);
+            const { items, total } = await mediaService.getAllMediaForAdmin(params.paginated
+                ? {
+                    skip: params.skip,
+                    take: params.limit,
+                    search: params.search,
+                    status: params.status ?? undefined,
+                    type: params.type ?? undefined,
+                }
+                : {
+                    search: params.search,
+                    status: params.status ?? undefined,
+                    type: params.type ?? undefined,
+                });
+            res.json({
+                success: true,
+                data: items,
+                meta: params.paginated
+                    ? (0, pagination_1.buildMeta)(total, params.page, params.limit)
+                    : undefined,
+            });
         }
         catch (error) {
             const message = error instanceof Error ? error.message : "خطای ناشناخته";

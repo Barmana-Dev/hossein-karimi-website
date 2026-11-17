@@ -4,6 +4,7 @@ import { AuthRequest } from "../../middleware/auth.middleware";
 import { ZodError } from "zod";
 import { prisma } from "../../config/prisma";
 import { inquiryUpdateSchema } from "../../validators";
+import { buildMeta, getPageParams } from "../../lib/pagination";
 
 const inquiriesService = new InquiriesService();
 
@@ -33,8 +34,24 @@ export class InquiriesController {
   // دریافت لیست (ادمین)
   async adminGetAll(req: AuthRequest, res: Response) {
     try {
-      const data = await inquiriesService.getAllInquiries();
-      res.json({ success: true, data });
+      const params = getPageParams(req);
+      const { items, total } = await inquiriesService.getAllInquiries(
+        params.paginated
+          ? {
+              skip: params.skip,
+              take: params.limit,
+              search: params.search,
+              status: params.status ?? undefined,
+            }
+          : { search: params.search, status: params.status ?? undefined },
+      );
+      res.json({
+        success: true,
+        data: items,
+        meta: params.paginated
+          ? buildMeta(total, params.page, params.limit)
+          : undefined,
+      });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "خطا";
       res.status(500).json({ success: false, error: { message } });

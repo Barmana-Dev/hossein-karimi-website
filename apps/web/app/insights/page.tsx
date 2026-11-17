@@ -11,7 +11,8 @@ import {
 } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { toPersianNumber } from "@/lib/utils";
-import { API_URL, assetUrl } from "@/lib/api";
+import { API_URL } from "@/lib/api";
+import { SmartImage } from "@/components/ui/SmartImage";
 
 interface Article {
   id: string;
@@ -141,11 +142,11 @@ export default function InsightsPage() {
                     className="relative block aspect-[16/10] bg-gradient-to-br from-[#E8EDF3] to-[#D5DEE8] overflow-hidden rounded-t-2xl"
                   >
                     {article.coverImage ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img loading="lazy" decoding="async"
-                        src={assetUrl(article.coverImage)}
+                      <SmartImage
+                        src={article.coverImage}
                         alt={article.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (
                       <>

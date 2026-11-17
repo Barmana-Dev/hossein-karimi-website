@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/Button";
-import { assetUrl } from "@/lib/api";
+import { SmartImage } from "@/components/ui/SmartImage";
 import {
   SITE_NAME,
   SITE_SUBTITLE,
@@ -95,11 +95,12 @@ export function Hero({ settings }: HeroProps) {
             <div className="absolute bottom-4 right-4 w-[60px] h-[60px] border-2 border-accent rounded-br-[16px] border-l-0 border-t-0 z-[3] opacity-70" />
 
             {settings?.portraitImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img fetchPriority="high" decoding="async"
-                src={assetUrl(settings.portraitImage)}
+              <SmartImage
+                src={settings.portraitImage}
                 alt="پرتره رسمی"
-                className="absolute inset-0 w-full h-full object-cover z-[2]"
+                priority
+                sizes="(max-width: 1024px) 90vw, 420px"
+                className="object-cover z-[2]"
               />
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-white/30 gap-3.5 text-[13px] text-center px-6 z-[2]">

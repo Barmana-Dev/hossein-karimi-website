@@ -25,10 +25,34 @@ class ArticlesService {
         });
     }
     // دریافت مقالات برای پنل ادمین (شامل پیش‌نویس‌ها)
-    async getAllArticlesForAdmin() {
-        return prisma_1.prisma.article.findMany({
-            orderBy: { createdAt: "desc" },
-        });
+    async getAllArticlesForAdmin(opts = {}) {
+        const where = {
+            ...(opts.status ? { status: opts.status } : {}),
+            ...(opts.search
+                ? {
+                    OR: [
+                        {
+                            title: { contains: opts.search, mode: "insensitive" },
+                        },
+                        {
+                            category: {
+                                contains: opts.search,
+                                mode: "insensitive",
+                            },
+                        },
+                    ],
+                }
+                : {}),
+        };
+        const [items, total] = await Promise.all([
+            prisma_1.prisma.article.findMany({
+                where,
+                orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+                ...(opts.take ? { skip: opts.skip, take: opts.take } : {}),
+            }),
+            prisma_1.prisma.article.count({ where }),
+        ]);
+        return { items, total };
     }
     // ایجاد مقاله جدید توسط ادمین
     async createArticle(data) {

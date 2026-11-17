@@ -35,10 +35,39 @@ export class InquiriesService {
     });
   }
 
-  async getAllInquiries() {
-    return prisma.inquiry.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+  async getAllInquiries(
+    opts: { skip?: number; take?: number; search?: string; status?: string } = {},
+  ) {
+    const where = {
+      ...(opts.status ? { status: opts.status } : {}),
+      ...(opts.search
+        ? {
+            OR: [
+              {
+                fullName: {
+                  contains: opts.search,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                subject: { contains: opts.search, mode: "insensitive" as const },
+              },
+              { email: { contains: opts.search, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      prisma.inquiry.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        ...(opts.take ? { skip: opts.skip, take: opts.take } : {}),
+      }),
+      prisma.inquiry.count({ where }),
+    ]);
+
+    return { items, total };
   }
 
   async getInquiryById(id: string) {

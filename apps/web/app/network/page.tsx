@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { toPersianNumber } from "@/lib/utils";
 import Link from "next/link";
-import { API_URL, assetUrl } from "@/lib/api";
+import { API_URL } from "@/lib/api";
+import { SmartImage } from "@/components/ui/SmartImage";
 import {
   ArrowLeft,
   Search,
@@ -236,13 +237,13 @@ export default function NetworkIndexPage() {
                   </div>
 
                   <div className="flex items-start justify-between mb-5">
-                    <div className="w-12 h-12 rounded-xl bg-background text-primary flex items-center justify-center font-black text-lg border border-border group-hover:bg-accent group-hover:text-white group-hover:border-accent transition-all duration-500 overflow-hidden">
+                    <div className="relative w-12 h-12 rounded-xl bg-background text-primary flex items-center justify-center font-black text-lg border border-border group-hover:bg-accent group-hover:text-white group-hover:border-accent transition-all duration-500 overflow-hidden">
                       {agency.logoImage ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img loading="lazy" decoding="async"
-                          src={assetUrl(agency.logoImage)}
+                        <SmartImage
+                          src={agency.logoImage}
                           alt={agency.name}
-                          className="w-full h-full object-cover"
+                          sizes="48px"
+                          className="object-cover"
                         />
                       ) : (
                         agency.name.charAt(0)

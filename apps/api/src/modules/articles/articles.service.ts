@@ -1,4 +1,5 @@
 import { prisma } from "../../config/prisma";
+import type { PageQuery } from "../../lib/pagination";
 
 // 👇 خطای «یافت نشد» تا کنترلر بتواند ۴۰۴ برگرداند (نه ۵۰۰)
 export class ArticleNotFoundError extends Error {
@@ -25,10 +26,36 @@ export class ArticlesService {
   }
 
   // دریافت مقالات برای پنل ادمین (شامل پیش‌نویس‌ها)
-  async getAllArticlesForAdmin() {
-    return prisma.article.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+  async getAllArticlesForAdmin(opts: PageQuery = {}) {
+    const where = {
+      ...(opts.status ? { status: opts.status } : {}),
+      ...(opts.search
+        ? {
+            OR: [
+              {
+                title: { contains: opts.search, mode: "insensitive" as const },
+              },
+              {
+                category: {
+                  contains: opts.search,
+                  mode: "insensitive" as const,
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      prisma.article.findMany({
+        where,
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+        ...(opts.take ? { skip: opts.skip, take: opts.take } : {}),
+      }),
+      prisma.article.count({ where }),
+    ]);
+
+    return { items, total };
   }
 
   // ایجاد مقاله جدید توسط ادمین

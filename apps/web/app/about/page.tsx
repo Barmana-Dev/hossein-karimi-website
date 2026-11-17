@@ -11,7 +11,8 @@ import { Container } from "@/components/ui/Container";
 import { SectionHead } from "@/components/ui/SectionHead";
 import { Button } from "@/components/ui/Button";
 import { formatDate } from "@/lib/utils";
-import { API_URL, assetUrl } from "@/lib/api";
+import { API_URL } from "@/lib/api";
+import { SmartImage } from "@/components/ui/SmartImage";
 
 export const metadata: Metadata = {
   title: "درباره من",
@@ -65,11 +66,11 @@ export default async function AboutPage() {
 
               <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-gradient-to-br from-primary-light to-primary border border-white/10 flex flex-col items-center justify-center text-white/50 mb-6">
                 {settings?.portraitImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img loading="lazy" decoding="async"
-                    src={assetUrl(settings.portraitImage)}
+                  <SmartImage
+                    src={settings.portraitImage}
                     alt="پرتره رسمی"
-                    className="absolute inset-0 w-full h-full object-cover z-0"
+                    sizes="(max-width: 1024px) 100vw, 420px"
+                    className="object-cover z-0"
                   />
                 ) : (
                   <>

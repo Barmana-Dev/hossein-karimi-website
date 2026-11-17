@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
-import { toPersianNumber } from "@/lib/utils";
+import { AdminPagination } from "@/components/admin/AdminPagination";
+import { useAdminList } from "@/lib/use-admin-list";
 import { API_URL } from "@/lib/api";
 
 interface Expertise {
@@ -12,28 +12,16 @@ interface Expertise {
   slug: string;
   status: string;
 }
-const ITEMS_PER_PAGE = 10;
 
 export default function AdminExpertisePage() {
-  const [expertises, setExpertises] = useState<Expertise[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-
-  useEffect(() => {
-    const fetchExps = async () => {
-      try {
-        const res = await fetch(`${API_URL}/public/expertise/admin/list`, {
-          credentials: "include",
-        });
-        if (res.ok) setExpertises((await res.json()).data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchExps();
-  }, []);
+  const {
+    items: expertises,
+    meta,
+    isLoading,
+    page,
+    setPage,
+    removeItem,
+  } = useAdminList<Expertise>("/public/expertise/admin/list", { limit: 10 });
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("حذف شود؟")) return;
@@ -42,22 +30,10 @@ export default function AdminExpertisePage() {
         method: "DELETE",
         credentials: "include",
       });
-      if (res.ok) setExpertises((prev) => prev.filter((e) => e.id !== id));
+      if (res.ok) removeItem(id);
     } catch (error) {
       console.error(error);
     }
-  };
-
-  const totalPages = Math.ceil(expertises.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedExps = expertises.slice(
-    startIndex,
-    startIndex + ITEMS_PER_PAGE,
-  );
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   if (isLoading)
@@ -88,80 +64,72 @@ export default function AdminExpertisePage() {
 
       <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-        <table className="w-full text-sm text-right">
-          <thead className="bg-background text-foreground-muted text-xs border-b border-border">
-            <tr>
-              <th className="px-6 py-4">عنوان</th>
-              <th className="px-6 py-4">اسلاگ</th>
-              <th className="px-6 py-4">وضعیت</th>
-              <th className="px-6 py-4 text-center">عملیات</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {paginatedExps.map((exp) => (
-              <tr key={exp.id} className="hover:bg-background/50 group">
-                <td className="px-6 py-4 font-bold text-primary">
-                  {exp.title}
-                </td>
-                <td className="px-6 py-4 text-foreground-muted" dir="ltr">
-                  /{exp.slug}
-                </td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${exp.status === "published" ? "bg-green-50 text-green-700" : "bg-orange-50 text-orange-700"}`}
-                  >
-                    {exp.status === "published" ? "منتشر شده" : "پیش‌نویس"}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center justify-center gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                    <Link
-                      href={`/admin/expertise/${exp.id}/edit`}
-                      className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"
-                    >
-                      <Edit size={14} />
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(exp.id)}
-                      className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </td>
+          <table className="w-full text-sm text-right">
+            <thead className="bg-background text-foreground-muted text-xs border-b border-border">
+              <tr>
+                <th className="px-6 py-4">عنوان</th>
+                <th className="px-6 py-4">اسلاگ</th>
+                <th className="px-6 py-4">وضعیت</th>
+                <th className="px-6 py-4 text-center">عملیات</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {expertises.map((exp) => (
+                <tr key={exp.id} className="hover:bg-background/50 group">
+                  <td className="px-6 py-4 font-bold text-primary">
+                    {exp.title}
+                  </td>
+                  <td className="px-6 py-4 text-foreground-muted" dir="ltr">
+                    /{exp.slug}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${exp.status === "published" ? "bg-green-50 text-green-700" : "bg-orange-50 text-orange-700"}`}
+                    >
+                      {exp.status === "published" ? "منتشر شده" : "پیش‌نویس"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-center gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                      <Link
+                        href={`/admin/expertise/${exp.id}/edit`}
+                        aria-label={`ویرایش ${exp.title}`}
+                        className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"
+                      >
+                        <Edit size={14} />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(exp.id)}
+                        aria-label={`حذف ${exp.title}`}
+                        className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {expertises.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={4}
+                    className="px-6 py-12 text-center text-foreground-muted"
+                  >
+                    حوزه‌ای یافت نشد.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-6">
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="px-4 py-2 rounded-lg border border-border bg-white text-sm font-bold text-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background transition-colors"
-          >
-            قبلی
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <button
-              key={page}
-              onClick={() => handlePageChange(page)}
-              className={`w-10 h-10 rounded-lg text-sm font-bold transition-colors ${currentPage === page ? "bg-primary text-white" : "bg-white border border-border text-primary hover:bg-background"}`}
-            >
-              {toPersianNumber(page)}
-            </button>
-          ))}
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 rounded-lg border border-border bg-white text-sm font-bold text-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background transition-colors"
-          >
-            بعدی
-          </button>
-        </div>
-      )}
+
+      <AdminPagination
+        page={page}
+        totalPages={meta.totalPages}
+        onChange={setPage}
+      />
     </div>
   );
 }

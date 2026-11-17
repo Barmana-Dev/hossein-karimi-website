@@ -8,6 +8,7 @@ import swaggerDocument from "./swagger.json";
 
 import { config } from "./config/env";
 import { prisma } from "./config/prisma";
+import { notifyError } from "./lib/error-notifier";
 
 // ایمپورت مسیرها
 import authRoutes from "./modules/auth/auth.routes";
@@ -166,6 +167,11 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
     );
   }
 
+  // خطاهای ۵xx به وب‌هوک مانیتورینگ (در صورت تنظیم) ارسال می‌شوند
+  if (status >= 500) {
+    notifyError(err, { path: req.path, method: req.method });
+  }
+
   // در پروداکشن پیام داخلی لو نمی‌رود
   const finalMessage = config.isProduction
     ? "خطای داخلی سرور رخ داده است."
@@ -187,6 +193,17 @@ if (config.enableSwagger) {
     }),
   );
 }
+
+// ==================== خطاهای مهارنشده ====================
+process.on("unhandledRejection", (reason) => {
+  console.error("🔴 Unhandled Rejection:", reason);
+  notifyError(reason, { type: "unhandledRejection" });
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("🔴 Uncaught Exception:", error);
+  notifyError(error, { type: "uncaughtException" });
+});
 
 // ==================== اجرای سرور ====================
 app.listen(config.port, () => {

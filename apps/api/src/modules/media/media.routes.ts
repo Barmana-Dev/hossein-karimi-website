@@ -1,5 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import multer from "multer";
+import { promises as fs } from "node:fs";
+import path from "node:path";
 import { MediaController } from "./media.controller";
 import { MediaItemController } from "./media-item.controller";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware";
@@ -64,12 +66,63 @@ const uploadSingle = (req: Request, res: Response, next: NextFunction) => {
   });
 };
 
+// 👇 تغییر اندازه و تبدیل به WebP بعد از آپلود (اگر sharp در دسترس باشد)
+const optimizeUpload = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const file = req.file;
+  // GIF را دست نمی‌زنیم تا انیمیشن حفظ شود
+  if (!file || file.mimetype === "image/gif") return next();
+
+  try {
+    const { default: sharp } = await import("sharp");
+    const targetPath = path.join(
+      config.uploadsDir,
+      path.basename(file.filename, path.extname(file.filename)) + ".webp",
+    );
+
+    await sharp(file.path)
+      .rotate()
+      .resize({
+        width: 1920,
+        height: 1920,
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 82 })
+      .toFile(targetPath);
+
+    await fs.unlink(file.path).catch(() => undefined);
+    const stats = await fs.stat(targetPath);
+
+    req.file = {
+      ...file,
+      path: targetPath,
+      filename: path.basename(targetPath),
+      destination: config.uploadsDir,
+      mimetype: "image/webp",
+      size: stats.size,
+    };
+  } catch (error) {
+    // اگر فشرده‌سازی شکست خورد، فایل اصلی بدون تغییر آپلود می‌شود
+    console.warn(
+      "⚠️ فشرده‌سازی تصویر انجام نشد:",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  return next();
+};
+
 // ====== ۱. مسیرهای آپلود و کتابخانه رسانه ======
 router.post(
   "/upload",
   requireAuth,
   requireRole(["SUPER_ADMIN", "EDITOR"]),
   uploadSingle,
+  (req, res, next) => void optimizeUpload(req, res, next),
   (req, res) => uploadController.upload(req as AuthRequest, res),
 );
 router.get(

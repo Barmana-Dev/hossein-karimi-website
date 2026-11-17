@@ -23,10 +23,35 @@ export class ExpertiseService {
     });
   }
 
-  async getAllExpertisesForAdmin() {
-    return prisma.expertise.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+  async getAllExpertisesForAdmin(
+    opts: { skip?: number; take?: number; search?: string; status?: string } = {},
+  ) {
+    const where = {
+      ...(opts.status ? { status: opts.status } : {}),
+      ...(opts.search
+        ? {
+            OR: [
+              {
+                title: { contains: opts.search, mode: "insensitive" as const },
+              },
+              {
+                summary: { contains: opts.search, mode: "insensitive" as const },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      prisma.expertise.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        ...(opts.take ? { skip: opts.skip, take: opts.take } : {}),
+      }),
+      prisma.expertise.count({ where }),
+    ]);
+
+    return { items, total };
   }
 
   async createExpertise(data: CreateExpertiseDTO) {

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { API_URL, assetUrl, fetchDetail } from "@/lib/api";
+import { API_URL, SITE_URL, assetUrl, fetchDetail } from "@/lib/api";
+import { SmartImage } from "@/components/ui/SmartImage";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import {
   ArrowRight,
@@ -73,9 +74,42 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const result = await getArticle(slug);
+
+  if (result.status !== "ok") {
+    return { title: "مقاله", robots: { index: false } };
+  }
+
+  const article = result.data;
+  const card = article as typeof article & {
+    publishedAt?: string | null;
+    updatedAt?: string | null;
+  };
+  const url = `${SITE_URL}/insights/${slug}`;
+  const image = article.coverImage
+    ? assetUrl(article.coverImage)
+    : `${SITE_URL}/og-default.png`;
+
   return {
-    title: result.status === "ok" ? result.data.title : "مقاله",
-    description: result.status === "ok" ? result.data.excerpt : undefined,
+    title: article.title,
+    description: article.excerpt,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "article",
+      title: article.title,
+      description: article.excerpt,
+      url,
+      siteName: "حسین کریمی",
+      locale: "fa_IR",
+      images: [{ url: image, width: 1200, height: 630, alt: article.title }],
+      publishedTime: card.publishedAt ?? undefined,
+      modifiedTime: card.updatedAt ?? card.publishedAt ?? undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description: article.excerpt,
+      images: [image],
+    },
   };
 }
 
@@ -152,11 +186,12 @@ export default async function ArticleDetailPage({
 
             {article.coverImage ? (
               <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden mb-12 border border-border relative bg-gray-100">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img decoding="async"
-                  src={assetUrl(article.coverImage)}
+                <SmartImage
+                  src={article.coverImage}
                   alt={article.title}
-                  className="w-full h-full object-cover"
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 900px"
+                  className="object-cover"
                 />
               </div>
             ) : (

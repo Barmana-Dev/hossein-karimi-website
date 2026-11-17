@@ -4,14 +4,31 @@ import { AuthRequest } from "../../middleware/auth.middleware";
 import { Prisma } from "../../generated/prisma/client";
 import { articleCreateSchema, articleUpdateSchema } from "../../validators";
 import { ZodError } from "zod";
+import { buildMeta, getPageParams } from "../../lib/pagination";
 
 const articlesService = new ArticlesService();
 
 export class ArticlesAdminController {
   async getAll(req: AuthRequest, res: Response) {
     try {
-      const articles = await articlesService.getAllArticlesForAdmin();
-      res.json({ success: true, data: articles });
+      const params = getPageParams(req);
+      const { items, total } = await articlesService.getAllArticlesForAdmin(
+        params.paginated
+          ? {
+              skip: params.skip,
+              take: params.limit,
+              search: params.search,
+              status: params.status ?? undefined,
+            }
+          : { search: params.search, status: params.status ?? undefined },
+      );
+      res.json({
+        success: true,
+        data: items,
+        meta: params.paginated
+          ? buildMeta(total, params.page, params.limit)
+          : undefined,
+      });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "خطای ناشناخته";
       res.status(500).json({ success: false, error: { message } });

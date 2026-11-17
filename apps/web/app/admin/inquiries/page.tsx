@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { API_URL } from "@/lib/api";
 import {
   Search,
   Eye,
@@ -12,7 +11,9 @@ import {
   AlertCircle,
   Trash2,
 } from "lucide-react";
-import { toPersianNumber } from "@/lib/utils";
+import { AdminPagination } from "@/components/admin/AdminPagination";
+import { useAdminList } from "@/lib/use-admin-list";
+import { API_URL } from "@/lib/api";
 
 interface Inquiry {
   id: string;
@@ -22,7 +23,6 @@ interface Inquiry {
   createdAt: string;
   status: string;
 }
-const ITEMS_PER_PAGE = 10;
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   new: { label: "جدید", color: "bg-blue-50 text-blue-700 border-blue-200" },
@@ -41,62 +41,30 @@ const statusLabels: Record<string, { label: string; color: string }> = {
 };
 
 export default function AdminInquiriesPage() {
-  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
+  const {
+    items: inquiries,
+    meta,
+    isLoading,
+    error: listError,
+    search,
+    setSearch,
+    status,
+    setStatus,
+    page,
+    setPage,
+    removeItem,
+  } = useAdminList<Inquiry>("/public/inquiries/admin/list", { limit: 10 });
 
-  // 👇 state های جدید برای حذف
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const controller = new AbortController();
+  const error = deleteError ?? listError;
 
-    const fetchInquiries = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`${API_URL}/public/inquiries/admin/list`, {
-          credentials: "include",
-          signal: controller.signal,
-        });
-
-        if (!res.ok) {
-          throw new Error("خطا در دریافت اطلاعات از سرور");
-        }
-
-        const json = await res.json();
-        setInquiries(json.data);
-      } catch (err: unknown) {
-        if (err instanceof Error) {
-          if (err.name !== "AbortError") {
-            setError(err.message || "خطای ناشناخته");
-          }
-        } else {
-          setError("خطای ناشناخته رخ داد");
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchInquiries();
-
-    return () => {
-      controller.abort();
-    };
-  }, []);
-
-  // 👇 تابع حذف درخواست
   const handleDelete = async () => {
     if (!deletingId) return;
     setIsDeleting(true);
-    setError(null);
+    setDeleteError(null);
 
     try {
       const res = await fetch(
@@ -116,38 +84,18 @@ export default function AdminInquiriesPage() {
         } catch {
           if (text) msg = text;
         }
-        setError(msg);
+        setDeleteError(msg);
         setIsDeleting(false);
         return;
       }
 
-      // 👇 حذف از state (بدون نیاز به refresh)
-      setInquiries((prev) => prev.filter((i) => i.id !== deletingId));
+      removeItem(deletingId);
       setDeletingId(null);
     } catch {
-      setError("خطای شبکه در حذف درخواست");
+      setDeleteError("خطای شبکه در حذف درخواست");
     } finally {
       setIsDeleting(false);
     }
-  };
-
-  const filtered = inquiries.filter((inq) => {
-    const matchesSearch =
-      inq.fullName.includes(searchTerm) || inq.subject.includes(searchTerm);
-    const matchesStatus = statusFilter === "all" || inq.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedInquiries = filtered.slice(
-    startIndex,
-    startIndex + ITEMS_PER_PAGE,
-  );
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   if (isLoading) {
@@ -180,11 +128,9 @@ export default function AdminInquiriesPage() {
           <input
             type="text"
             placeholder="جستجوی نام یا موضوع..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
+            aria-label="جستجوی درخواست"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-background border border-border rounded-xl py-2.5 pr-10 pl-4 text-sm focus:outline-none"
           />
           <Search
@@ -195,11 +141,9 @@ export default function AdminInquiriesPage() {
         <div className="flex items-center gap-2 bg-background border border-border rounded-xl px-3 py-1 w-full md:w-auto">
           <Filter size={16} className="text-foreground-muted" />
           <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setCurrentPage(1);
-            }}
+            aria-label="فیلتر وضعیت"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
             className="bg-transparent py-1.5 text-sm focus:outline-none w-full"
           >
             <option value="all">همه وضعیت‌ها</option>
@@ -213,103 +157,82 @@ export default function AdminInquiriesPage() {
 
       <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-        <table className="w-full text-sm text-right">
-          <thead className="bg-background text-foreground-muted text-xs border-b border-border">
-            <tr>
-              <th className="px-6 py-4">نام فرستنده</th>
-              <th className="px-6 py-4">موضوع</th>
-              <th className="px-6 py-4">نوع</th>
-              <th className="px-6 py-4">وضعیت</th>
-              <th className="px-6 py-4 text-center">عملیات</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {paginatedInquiries.map((inq) => (
-              <tr key={inq.id} className="hover:bg-background/50 group">
-                <td className="px-6 py-4 font-bold text-primary">
-                  {inq.fullName}
-                </td>
-                <td className="px-6 py-4 text-foreground-muted line-clamp-1 max-w-[250px]">
-                  {inq.subject}
-                </td>
-                <td className="px-6 py-4 text-foreground-muted text-xs">
-                  {inq.type}
-                </td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${statusLabels[inq.status]?.color || "bg-gray-100"}`}
-                  >
-                    {statusLabels[inq.status]?.label || inq.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  {/* 👇 دکمه مشاهده + دکمه حذف */}
-                  <div className="flex justify-center items-center gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                    <Link
-                      href={`/admin/inquiries/${inq.id}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary-light"
-                    >
-                      <Eye size={14} /> مشاهده
-                    </Link>
-                    <button
-                      onClick={() => setDeletingId(inq.id)}
-                      className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition-colors"
-                      title="حذف"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {paginatedInquiries.length === 0 && (
+          <table className="w-full text-sm text-right">
+            <thead className="bg-background text-foreground-muted text-xs border-b border-border">
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-6 py-12 text-center text-foreground-muted"
-                >
-                  <MessageSquare
-                    size={32}
-                    className="mx-auto mb-2 opacity-20"
-                  />{" "}
-                  درخواستی یافت نشد.
-                </td>
+                <th className="px-6 py-4">نام فرستنده</th>
+                <th className="px-6 py-4">موضوع</th>
+                <th className="px-6 py-4">نوع</th>
+                <th className="px-6 py-4">وضعیت</th>
+                <th className="px-6 py-4 text-center">عملیات</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {inquiries.map((inq) => (
+                <tr key={inq.id} className="hover:bg-background/50 group">
+                  <td className="px-6 py-4 font-bold text-primary">
+                    {inq.fullName}
+                  </td>
+                  <td className="px-6 py-4 text-foreground-muted line-clamp-1 max-w-[250px]">
+                    {inq.subject}
+                  </td>
+                  <td className="px-6 py-4 text-foreground-muted text-xs">
+                    {inq.type}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${statusLabels[inq.status]?.color || "bg-gray-100"}`}
+                    >
+                      {statusLabels[inq.status]?.label || inq.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex justify-center items-center gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                      <Link
+                        href={`/admin/inquiries/${inq.id}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary-light"
+                      >
+                        <Eye size={14} /> مشاهده
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => setDeletingId(inq.id)}
+                        className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition-colors"
+                        title="حذف"
+                        aria-label={`حذف درخواست ${inq.fullName}`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {inquiries.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-6 py-12 text-center text-foreground-muted"
+                  >
+                    <MessageSquare
+                      size={32}
+                      className="mx-auto mb-2 opacity-20"
+                    />{" "}
+                    درخواستی یافت نشد.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-6">
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="px-4 py-2 rounded-lg border border-border bg-white text-sm font-bold text-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background transition-colors"
-          >
-            قبلی
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <button
-              key={page}
-              onClick={() => handlePageChange(page)}
-              className={`w-10 h-10 rounded-lg text-sm font-bold transition-colors ${currentPage === page ? "bg-primary text-white" : "bg-white border border-border text-primary hover:bg-background"}`}
-            >
-              {toPersianNumber(page)}
-            </button>
-          ))}
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 rounded-lg border border-border bg-white text-sm font-bold text-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background transition-colors"
-          >
-            بعدی
-          </button>
-        </div>
-      )}
+      <AdminPagination
+        page={page}
+        totalPages={meta.totalPages}
+        onChange={setPage}
+      />
 
-      {/* 👇 مودال تایید حذف */}
+      {/* مودال تایید حذف */}
       {deletingId && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
@@ -337,6 +260,7 @@ export default function AdminInquiriesPage() {
 
             <div className="flex gap-2 justify-end pt-2">
               <button
+                type="button"
                 onClick={() => setDeletingId(null)}
                 disabled={isDeleting}
                 className="px-4 py-2 rounded-xl text-sm font-bold border border-border hover:bg-background disabled:opacity-50"
@@ -344,6 +268,7 @@ export default function AdminInquiriesPage() {
                 انصراف
               </button>
               <button
+                type="button"
                 onClick={handleDelete}
                 disabled={isDeleting}
                 className="px-4 py-2 rounded-xl text-sm font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 inline-flex items-center gap-2"

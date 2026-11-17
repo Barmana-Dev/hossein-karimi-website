@@ -29,10 +29,31 @@ export class NetworkService {
     });
   }
 
-  async getAllAgenciesForAdmin() {
-    return prisma.agency.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+  async getAllAgenciesForAdmin(
+    opts: { skip?: number; take?: number; search?: string; status?: string } = {},
+  ) {
+    const where = {
+      ...(opts.status ? { status: opts.status } : {}),
+      ...(opts.search
+        ? {
+            OR: [
+              { name: { contains: opts.search, mode: "insensitive" as const } },
+              { field: { contains: opts.search, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      prisma.agency.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        ...(opts.take ? { skip: opts.skip, take: opts.take } : {}),
+      }),
+      prisma.agency.count({ where }),
+    ]);
+
+    return { items, total };
   }
 
   async createAgency(data: CreateAgencyDTO) {

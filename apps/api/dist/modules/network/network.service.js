@@ -14,10 +14,27 @@ class NetworkService {
             where: { slug, status: "published" },
         });
     }
-    async getAllAgenciesForAdmin() {
-        return prisma_1.prisma.agency.findMany({
-            orderBy: { createdAt: "desc" },
-        });
+    async getAllAgenciesForAdmin(opts = {}) {
+        const where = {
+            ...(opts.status ? { status: opts.status } : {}),
+            ...(opts.search
+                ? {
+                    OR: [
+                        { name: { contains: opts.search, mode: "insensitive" } },
+                        { field: { contains: opts.search, mode: "insensitive" } },
+                    ],
+                }
+                : {}),
+        };
+        const [items, total] = await Promise.all([
+            prisma_1.prisma.agency.findMany({
+                where,
+                orderBy: { createdAt: "desc" },
+                ...(opts.take ? { skip: opts.skip, take: opts.take } : {}),
+            }),
+            prisma_1.prisma.agency.count({ where }),
+        ]);
+        return { items, total };
     }
     async createAgency(data) {
         return prisma_1.prisma.agency.create({ data });

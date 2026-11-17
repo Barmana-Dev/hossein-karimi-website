@@ -115,4 +115,6 @@ export const config = {
   enableSwagger:
     process.env.ENABLE_SWAGGER === "true" || !isProduction,
   cookieSecure: isProduction,
+  // آدرس وب‌هوک خطا (اختیاری) برای مانیتورینگ متمرکز
+  errorWebhookUrl: (process.env.ERROR_WEBHOOK_URL || "").trim(),
 } as const;

@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NetworkController = void 0;
 const network_service_1 = require("./network.service");
+const pagination_1 = require("../../lib/pagination");
 const client_1 = require("../../generated/prisma/client");
 const validators_1 = require("../../validators");
 const zod_1 = require("zod");
@@ -34,8 +35,22 @@ class NetworkController {
     }
     async adminGetAll(req, res) {
         try {
-            const agencies = await networkService.getAllAgenciesForAdmin();
-            res.json({ success: true, data: agencies });
+            const params = (0, pagination_1.getPageParams)(req);
+            const { items, total } = await networkService.getAllAgenciesForAdmin(params.paginated
+                ? {
+                    skip: params.skip,
+                    take: params.limit,
+                    search: params.search,
+                    status: params.status ?? undefined,
+                }
+                : { search: params.search, status: params.status ?? undefined });
+            res.json({
+                success: true,
+                data: items,
+                meta: params.paginated
+                    ? (0, pagination_1.buildMeta)(total, params.page, params.limit)
+                    : undefined,
+            });
         }
         catch (error) {
             const message = error instanceof Error ? error.message : "خطای ناشناخته";

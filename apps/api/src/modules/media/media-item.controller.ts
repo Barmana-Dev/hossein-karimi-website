@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { ZodError } from "zod";
 import { MediaItemService } from "./media.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
+import { buildMeta, getPageParams } from "../../lib/pagination";
 import { mediaCreateSchema, mediaUpdateSchema } from "../../validators";
 
 const mediaService = new MediaItemService();
@@ -30,8 +31,29 @@ export class MediaItemController {
 
   async adminGetAll(req: AuthRequest, res: Response) {
     try {
-      const data = await mediaService.getAllMediaForAdmin();
-      res.json({ success: true, data });
+      const params = getPageParams(req);
+      const { items, total } = await mediaService.getAllMediaForAdmin(
+        params.paginated
+          ? {
+              skip: params.skip,
+              take: params.limit,
+              search: params.search,
+              status: params.status ?? undefined,
+              type: params.type ?? undefined,
+            }
+          : {
+              search: params.search,
+              status: params.status ?? undefined,
+              type: params.type ?? undefined,
+            },
+      );
+      res.json({
+        success: true,
+        data: items,
+        meta: params.paginated
+          ? buildMeta(total, params.page, params.limit)
+          : undefined,
+      });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "خطای ناشناخته";
       res.status(500).json({ success: false, error: { message } });

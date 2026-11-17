@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ExpertiseController = void 0;
 const expertise_service_1 = require("./expertise.service");
+const pagination_1 = require("../../lib/pagination");
 const client_1 = require("../../generated/prisma/client");
 const validators_1 = require("../../validators");
 const zod_1 = require("zod");
@@ -31,8 +32,22 @@ class ExpertiseController {
     }
     async adminGetAll(req, res) {
         try {
-            const data = await expertiseService.getAllExpertisesForAdmin();
-            res.json({ success: true, data });
+            const params = (0, pagination_1.getPageParams)(req);
+            const { items, total } = await expertiseService.getAllExpertisesForAdmin(params.paginated
+                ? {
+                    skip: params.skip,
+                    take: params.limit,
+                    search: params.search,
+                    status: params.status ?? undefined,
+                }
+                : { search: params.search, status: params.status ?? undefined });
+            res.json({
+                success: true,
+                data: items,
+                meta: params.paginated
+                    ? (0, pagination_1.buildMeta)(total, params.page, params.limit)
+                    : undefined,
+            });
         }
         catch {
             res.status(500).json({ success: false, error: { message: "خطا" } });

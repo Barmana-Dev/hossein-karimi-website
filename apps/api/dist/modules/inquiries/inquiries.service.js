@@ -35,10 +35,35 @@ class InquiriesService {
             },
         });
     }
-    async getAllInquiries() {
-        return prisma_1.prisma.inquiry.findMany({
-            orderBy: { createdAt: "desc" },
-        });
+    async getAllInquiries(opts = {}) {
+        const where = {
+            ...(opts.status ? { status: opts.status } : {}),
+            ...(opts.search
+                ? {
+                    OR: [
+                        {
+                            fullName: {
+                                contains: opts.search,
+                                mode: "insensitive",
+                            },
+                        },
+                        {
+                            subject: { contains: opts.search, mode: "insensitive" },
+                        },
+                        { email: { contains: opts.search, mode: "insensitive" } },
+                    ],
+                }
+                : {}),
+        };
+        const [items, total] = await Promise.all([
+            prisma_1.prisma.inquiry.findMany({
+                where,
+                orderBy: { createdAt: "desc" },
+                ...(opts.take ? { skip: opts.skip, take: opts.take } : {}),
+            }),
+            prisma_1.prisma.inquiry.count({ where }),
+        ]);
+        return { items, total };
     }
     async getInquiryById(id) {
         return prisma_1.prisma.inquiry.findUnique({ where: { id } });

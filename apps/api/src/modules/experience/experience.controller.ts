@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { ExperienceService } from "./experience.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
+import { buildMeta, getPageParams } from "../../lib/pagination";
 import { Prisma } from "../../generated/prisma/client";
 import {
   experienceCreateSchema,
@@ -42,9 +43,25 @@ export class ExperienceController {
 
   async adminGetAll(req: AuthRequest, res: Response) {
     try {
+      const params = getPageParams(req);
+      const { items, total } =
+        await experienceService.getAllExperiencesForAdmin(
+          params.paginated
+            ? {
+                skip: params.skip,
+                take: params.limit,
+                search: params.search,
+                status: params.status ?? undefined,
+              }
+            : { search: params.search, status: params.status ?? undefined },
+        );
+
       res.json({
         success: true,
-        data: await experienceService.getAllExperiencesForAdmin(),
+        data: items,
+        meta: params.paginated
+          ? buildMeta(total, params.page, params.limit)
+          : undefined,
       });
     } catch {
       res.status(500).json({ success: false, error: { message: "خطا" } });

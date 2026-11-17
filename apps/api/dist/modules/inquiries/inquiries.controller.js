@@ -5,6 +5,7 @@ const inquiries_service_1 = require("./inquiries.service");
 const zod_1 = require("zod");
 const prisma_1 = require("../../config/prisma");
 const validators_1 = require("../../validators");
+const pagination_1 = require("../../lib/pagination");
 const inquiriesService = new inquiries_service_1.InquiriesService();
 class InquiriesController {
     // ثبت عمومی
@@ -33,8 +34,22 @@ class InquiriesController {
     // دریافت لیست (ادمین)
     async adminGetAll(req, res) {
         try {
-            const data = await inquiriesService.getAllInquiries();
-            res.json({ success: true, data });
+            const params = (0, pagination_1.getPageParams)(req);
+            const { items, total } = await inquiriesService.getAllInquiries(params.paginated
+                ? {
+                    skip: params.skip,
+                    take: params.limit,
+                    search: params.search,
+                    status: params.status ?? undefined,
+                }
+                : { search: params.search, status: params.status ?? undefined });
+            res.json({
+                success: true,
+                data: items,
+                meta: params.paginated
+                    ? (0, pagination_1.buildMeta)(total, params.page, params.limit)
+                    : undefined,
+            });
         }
         catch (error) {
             const message = error instanceof Error ? error.message : "خطا";

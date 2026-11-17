@@ -189,6 +189,8 @@ npm run start                       # next start
 - پوشهٔ آپلود (`UPLOADS_DIR`) را روی فضای پایدار و با پشتیبان‌گیری منظم نگه دارید.
 - پشت nginx/Cloudflare با HTTPS اجرا کنید تا کوکی `Secure` کار کند.
 - مسیر `/api/health/db` برای مانیتورینگ آمادگی دیتابیس استفاده شود.
+- برای مانیتورینگ خطا، `ERROR_WEBHOOK_URL` را تنظیم کنید؛ خطاهای ۵۰۰ و خطاهای مهارنشده به آن ارسال می‌شوند.
+- راهنمای کامل مانیتورینگ، پشتیبان‌گیری (`scripts/backup-db.sh`) و بازیابی در [`docs/operations.md`](docs/operations.md) است.
 
 ---
 
@@ -206,8 +208,19 @@ npm run start                       # next start
 | `npm run lint` | ESLint روی سورس فرانت‌اند و API |
 | `npm run typecheck` | بررسی TypeScript هر دو بخش |
 | `npm test` | تست‌های خودکار (وب + API) |
+| `npm run test:e2e` | تست‌های End-to-End با Playwright |
 
-CI (`.github/workflows/ci.yml`) در هر push و pull request دستورهای lint، typecheck، test و build را اجرا می‌کند.
+CI:
+
+- `.github/workflows/ci.yml` در هر push و pull request دستورهای lint، typecheck، test و build را اجرا می‌کند.
+- `.github/workflows/e2e.yml` با یک دیتابیس Postgres موقت، مایگریشن‌ها را اعمال و تست‌های Playwright را اجرا می‌کند.
+
+اجرای محلی E2E (سرورهای وب و API باید بالا باشند یا خود Playwright اجرا می‌کند):
+
+```bash
+npx playwright install chromium   # فقط بار اول
+npm run test:e2e
+```
 
 ---
 

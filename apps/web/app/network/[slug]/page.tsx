@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { MapPin, Building2, Link as LinkIcon, ShieldCheck } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
-import { API_URL, assetUrl, fetchDetail, safeExternalUrl } from "@/lib/api";
+import { API_URL, fetchDetail, safeExternalUrl } from "@/lib/api";
+import { SmartImage } from "@/components/ui/SmartImage";
 import { DataErrorState } from "@/components/ui/DataErrorState";
 
 // export const instant = false;
@@ -73,13 +74,13 @@ export default async function AgencyDetailPage({
 
           <div className="flex flex-col md:flex-row items-center md:items-end gap-8">
             {/* لوگو ساده */}
-            <div className="w-24 h-24 rounded-2xl bg-white/5 text-white flex items-center justify-center font-black text-4xl border border-white/10 shrink-0 overflow-hidden">
+            <div className="relative w-24 h-24 rounded-2xl bg-white/5 text-white flex items-center justify-center font-black text-4xl border border-white/10 shrink-0 overflow-hidden">
               {agency.logoImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img loading="lazy" decoding="async"
-                  src={assetUrl(agency.logoImage)}
+                <SmartImage
+                  src={agency.logoImage}
                   alt={agency.name}
-                  className="w-full h-full object-cover"
+                  sizes="96px"
+                  className="object-cover"
                 />
               ) : (
                 agency.name.charAt(0)

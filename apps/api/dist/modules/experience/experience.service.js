@@ -14,8 +14,34 @@ class ExperienceService {
             where: { slug, status: "published" },
         });
     }
-    async getAllExperiencesForAdmin() {
-        return prisma_1.prisma.experience.findMany({ orderBy: { createdAt: "desc" } });
+    async getAllExperiencesForAdmin(opts = {}) {
+        const where = {
+            ...(opts.status ? { status: opts.status } : {}),
+            ...(opts.search
+                ? {
+                    OR: [
+                        {
+                            title: { contains: opts.search, mode: "insensitive" },
+                        },
+                        {
+                            organization: {
+                                contains: opts.search,
+                                mode: "insensitive",
+                            },
+                        },
+                    ],
+                }
+                : {}),
+        };
+        const [items, total] = await Promise.all([
+            prisma_1.prisma.experience.findMany({
+                where,
+                orderBy: { createdAt: "desc" },
+                ...(opts.take ? { skip: opts.skip, take: opts.take } : {}),
+            }),
+            prisma_1.prisma.experience.count({ where }),
+        ]);
+        return { items, total };
     }
     async createExperience(data) {
         return prisma_1.prisma.experience.create({

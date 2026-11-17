@@ -58,6 +58,16 @@ const nextConfig: NextConfig = {
 
   images: {
     remotePatterns,
+    // تبدیل خودکار به فرمت‌های مدرن + کش طولانی‌مدت تصاویر بهینه‌شده
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 60 * 60 * 24 * 30,
+    deviceSizes: [360, 420, 640, 768, 1024, 1280, 1536, 1920],
+    imageSizes: [64, 96, 128, 256, 384],
+    qualities: [60, 70, 75, 80, 82, 90],
+    // فقط در محیط توسعه اجازهٔ خواندن تصویر از API لوکال داده می‌شود
+    ...(/localhost|127\.0\.0\.1/i.test(apiOrigin)
+      ? { dangerouslyAllowLocalIP: true }
+      : {}),
   },
 };
 

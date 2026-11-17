@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { NetworkService } from "./network.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
+import { buildMeta, getPageParams } from "../../lib/pagination";
 import { Prisma } from "../../generated/prisma/client";
 import { agencyCreateSchema, agencyUpdateSchema } from "../../validators";
 import { ZodError } from "zod";
@@ -35,8 +36,24 @@ export class NetworkController {
 
   async adminGetAll(req: AuthRequest, res: Response) {
     try {
-      const agencies = await networkService.getAllAgenciesForAdmin();
-      res.json({ success: true, data: agencies });
+      const params = getPageParams(req);
+      const { items, total } = await networkService.getAllAgenciesForAdmin(
+        params.paginated
+          ? {
+              skip: params.skip,
+              take: params.limit,
+              search: params.search,
+              status: params.status ?? undefined,
+            }
+          : { search: params.search, status: params.status ?? undefined },
+      );
+      res.json({
+        success: true,
+        data: items,
+        meta: params.paginated
+          ? buildMeta(total, params.page, params.limit)
+          : undefined,
+      });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "خطای ناشناخته";
       res.status(500).json({ success: false, error: { message } });
