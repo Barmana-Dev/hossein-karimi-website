@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search,
   Trash2,
@@ -37,7 +37,7 @@ export default function MediaLibraryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchAssets = async () => {
+  const fetchAssets = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/public/media/list`, {
         credentials: "include",
@@ -48,26 +48,24 @@ export default function MediaLibraryPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    let isMounted = true;
-    const loadAssets = async () => {
-      try {
-        const res = await fetch(`${API_URL}/public/media/list`, {
-          credentials: "include",
-        });
-        if (res.ok && isMounted) setAssets((await res.json()).data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    };
-    loadAssets();
-    return () => {
-      isMounted = false;
-    };
+    const controller = new AbortController();
+    fetch(`${API_URL}/public/media/list`, {
+      credentials: "include",
+      signal: controller.signal,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data) setAssets(json.data);
+      })
+      .catch(() => {
+        /* لغو شدن درخواست هنگام خروج از صفحه نادیده گرفته می‌شود */
+      })
+      .finally(() => setIsLoading(false));
+
+    return () => controller.abort();
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,7 +201,7 @@ export default function MediaLibraryPage() {
               >
                 <div className="aspect-[4/3] bg-background flex items-center justify-center relative overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={assetUrl(asset.urlOrKey)}
                     alt={asset.altText || "تصویر"}
                     className="w-full h-full object-cover"
@@ -317,7 +315,7 @@ export default function MediaLibraryPage() {
                   <div className="w-full">
                     <div className="relative w-full h-40 rounded-lg overflow-hidden mb-3 border border-border">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={previewUrl}
                         alt="Preview"
                         className="w-full h-full object-cover"

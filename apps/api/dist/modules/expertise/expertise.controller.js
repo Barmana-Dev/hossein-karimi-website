@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ExpertiseController = void 0;
 const expertise_service_1 = require("./expertise.service");
 const client_1 = require("../../generated/prisma/client");
+const validators_1 = require("../../validators");
+const zod_1 = require("zod");
 const expertiseService = new expertise_service_1.ExpertiseService();
 class ExpertiseController {
     async getAll(req, res) {
@@ -10,7 +12,7 @@ class ExpertiseController {
             const data = await expertiseService.getPublishedExpertises();
             res.json({ success: true, data });
         }
-        catch (error) {
+        catch {
             res.status(500).json({ success: false, error: { message: "خطا" } });
         }
     }
@@ -23,7 +25,7 @@ class ExpertiseController {
                     .json({ success: false, error: { message: "یافت نشد" } });
             res.json({ success: true, data });
         }
-        catch (error) {
+        catch {
             res.status(500).json({ success: false, error: { message: "خطا" } });
         }
     }
@@ -32,16 +34,26 @@ class ExpertiseController {
             const data = await expertiseService.getAllExpertisesForAdmin();
             res.json({ success: true, data });
         }
-        catch (error) {
+        catch {
             res.status(500).json({ success: false, error: { message: "خطا" } });
         }
     }
     async adminCreate(req, res) {
         try {
-            const data = await expertiseService.createExpertise(req.body);
+            const validated = validators_1.expertiseCreateSchema.parse(req.body);
+            const data = await expertiseService.createExpertise(validated);
             res.status(201).json({ success: true, data });
         }
         catch (error) {
+            if (error instanceof zod_1.ZodError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: "VALIDATION_ERROR",
+                        fields: error.flatten().fieldErrors,
+                    },
+                });
+            }
             if (error instanceof client_1.Prisma.PrismaClientKnownRequestError &&
                 error.code === "P2002") {
                 return res
@@ -60,16 +72,26 @@ class ExpertiseController {
                     .json({ success: false, error: { message: "یافت نشد" } });
             res.json({ success: true, data });
         }
-        catch (error) {
+        catch {
             res.status(500).json({ success: false, error: { message: "خطا" } });
         }
     }
     async adminUpdate(req, res) {
         try {
-            const data = await expertiseService.updateExpertise(req.params.id, req.body);
+            const validated = validators_1.expertiseUpdateSchema.parse(req.body);
+            const data = await expertiseService.updateExpertise(req.params.id, validated);
             res.json({ success: true, data });
         }
         catch (error) {
+            if (error instanceof zod_1.ZodError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: "VALIDATION_ERROR",
+                        fields: error.flatten().fieldErrors,
+                    },
+                });
+            }
             if (error instanceof client_1.Prisma.PrismaClientKnownRequestError &&
                 error.code === "P2002") {
                 return res
@@ -84,7 +106,7 @@ class ExpertiseController {
             await expertiseService.deleteExpertise(req.params.id);
             res.json({ success: true });
         }
-        catch (error) {
+        catch {
             res.status(500).json({ success: false, error: { message: "خطا" } });
         }
     }

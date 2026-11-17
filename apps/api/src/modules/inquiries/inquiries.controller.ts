@@ -3,6 +3,7 @@ import { InquiriesService, inquirySchema } from "./inquiries.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
 import { ZodError } from "zod";
 import { prisma } from "../../config/prisma";
+import { inquiryUpdateSchema } from "../../validators";
 
 const inquiriesService = new InquiriesService();
 
@@ -59,13 +60,26 @@ export class InquiriesController {
   // تغییر وضعیت (ادمین)
   async adminUpdate(req: AuthRequest, res: Response) {
     try {
+      // 👇 فقط وضعیت و یادداشت داخلی قابل تغییر است
+      const validated = inquiryUpdateSchema.parse(req.body);
       const data = await inquiriesService.updateInquiry(
         req.params.id as string,
-        req.body,
+        validated,
       );
       res.json({ success: true, data });
-    } catch {
-      res.status(500).json({ success: false, error: { message: "خطا" } });
+    } catch (error: unknown) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "اطلاعات ارسالی معتبر نیست.",
+            fields: error.flatten().fieldErrors,
+          },
+        });
+      }
+      const message = error instanceof Error ? error.message : "خطا";
+      res.status(500).json({ success: false, error: { message } });
     }
   }
 

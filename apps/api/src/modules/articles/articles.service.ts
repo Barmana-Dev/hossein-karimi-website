@@ -1,5 +1,13 @@
 import { prisma } from "../../config/prisma";
 
+// 👇 خطای «یافت نشد» تا کنترلر بتواند ۴۰۴ برگرداند (نه ۵۰۰)
+export class ArticleNotFoundError extends Error {
+  constructor() {
+    super("مقاله یافت نشد");
+    this.name = "ArticleNotFoundError";
+  }
+}
+
 export class ArticlesService {
   // دریافت مقالات برای سایت عمومی
   async getPublishedArticles() {
@@ -10,7 +18,8 @@ export class ArticlesService {
   }
 
   async getArticleBySlug(slug: string) {
-    return prisma.article.findUnique({
+    // findFirst چون وضعیت هم شرط دارد (findUnique فقط کلید یکتا می‌پذیرد)
+    return prisma.article.findFirst({
       where: { slug, status: "published" },
     });
   }
@@ -62,15 +71,32 @@ export class ArticlesService {
       status?: string;
       readTime?: number;
       coverImage?: string | null;
+      publishedAt?: string | null;
     },
   ) {
+    const existing = await prisma.article.findUnique({
+      where: { id },
+      select: { publishedAt: true },
+    });
+    if (!existing) throw new ArticleNotFoundError();
+
+    // 👇 تاریخ انتشار فقط در اولین انتشار ست می‌شود و با هر ویرایش عوض نمی‌شود
+    const publishedAt =
+      data.publishedAt !== undefined
+        ? data.publishedAt
+          ? new Date(data.publishedAt)
+          : null
+        : data.status === "published" && !existing.publishedAt
+          ? new Date()
+          : undefined;
+
     return prisma.article.update({
       where: { id },
       data: {
         ...data,
         // اگه coverImage ارسال شده، ذخیره کن (حتی اگه null باشه)
         ...(data.coverImage !== undefined && { coverImage: data.coverImage }),
-        ...(data.status === "published" && { publishedAt: new Date() }),
+        ...(publishedAt !== undefined && { publishedAt }),
       },
     });
   }

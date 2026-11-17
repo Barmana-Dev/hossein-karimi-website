@@ -4,6 +4,7 @@ exports.AuthController = void 0;
 const zod_1 = require("zod");
 const auth_service_1 = require("./auth.service");
 const prisma_1 = require("../../config/prisma");
+const env_1 = require("../../config/env");
 const authService = new auth_service_1.AuthService();
 const loginSchema = zod_1.z.object({
     email: zod_1.z.string().email("ایمیل نامعتبر است"),
@@ -18,8 +19,9 @@ class AuthController {
             // تنظیم کوکی امن (HttpOnly)
             res.cookie("token", result.token, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
+                secure: env_1.config.cookieSecure,
                 sameSite: "strict",
+                path: "/",
                 maxAge: 24 * 60 * 60 * 1000, // ۱ روز
             });
             res.json({
@@ -29,9 +31,26 @@ class AuthController {
             });
         }
         catch (error) {
-            // بررسی اینکه آیا خطا یک Error است یا نه
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
-            res.status(400).json({ success: false, error: { message } });
+            if (error instanceof zod_1.z.ZodError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: "VALIDATION_ERROR",
+                        message: "اطلاعات ورود معتبر نیست.",
+                        fields: error.flatten().fieldErrors,
+                    },
+                });
+            }
+            if (error instanceof auth_service_1.AuthError) {
+                return res
+                    .status(error.status)
+                    .json({ success: false, error: { message: error.message } });
+            }
+            console.error("🔴 Login error:", error);
+            res.status(500).json({
+                success: false,
+                error: { message: "خطای داخلی سرور رخ داده است." },
+            });
         }
     }
     async logout(req, res) {

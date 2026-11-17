@@ -142,7 +142,7 @@ export function MediaPicker({ onSelect, onClose }: MediaPickerProps) {
                   className="group relative aspect-square rounded-xl overflow-hidden border border-border cursor-pointer hover:border-accent transition-all"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={assetUrl(asset.urlOrKey)}
                     alt={asset.altText || "تصویر"}
                     className="w-full h-full object-cover"

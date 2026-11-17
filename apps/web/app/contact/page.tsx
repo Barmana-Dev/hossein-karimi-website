@@ -86,14 +86,8 @@ export default function ContactPage() {
     }
   };
 
-  if (isSettingsLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="animate-spin text-accent" size={40} />
-      </div>
-    );
-  }
-
+  // 👇 صفحه بلافاصله رندر می‌شود (h1 و فرم در HTML اولیه هستند)
+  // و فقط اطلاعات تماس پس از دریافت تنظیمات نمایش داده می‌شود.
   return (
     <div className="pt-[120px] pb-24 bg-background min-h-screen relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[100px] pointer-events-none" />
@@ -126,6 +120,12 @@ export default function ContactPage() {
               </p>
 
               <ul className="space-y-8">
+                {isSettingsLoading && (
+                  <li className="flex items-center gap-2 text-white/40 text-sm">
+                    <Loader2 size={14} className="animate-spin" />
+                    در حال دریافت اطلاعات تماس...
+                  </li>
+                )}
                 {/* 👇 شماره تماس (فقط اگر مقدار داشته باشد) */}
                 {settings?.phone && (
                   <li className="flex items-start gap-4">

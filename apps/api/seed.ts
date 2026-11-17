@@ -1,8 +1,9 @@
 import { prisma } from "./src/config/prisma";
+import { config } from "./src/config/env";
 import bcrypt from "bcryptjs";
 
-// 👇 فقط در محیط توسعه اجرا شود
-if (process.env.NODE_ENV === "production") {
+// 👇 seed فقط در حالت دولوپمنت اجرا می‌شود (نه روی دیتابیس محصول نهایی)
+if (config.isProduction) {
   console.error("⛔ Seed فقط در محیط توسعه قابل اجراست.");
   process.exit(1);
 }

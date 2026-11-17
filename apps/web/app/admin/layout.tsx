@@ -121,14 +121,6 @@ export default function AdminLayout({
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  // 👇 خواندن لیست اعلان‌های خوانده‌شده از localStorage هنگام بارگذاری
-  const [readIds, setReadIds] = useState<string[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("read_notifications");
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  });
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResults | null>(
@@ -164,11 +156,22 @@ export default function AdminLayout({
     };
   }, [router]);
 
-  // ۲. به‌روزرسانی دوره‌ای اعلان‌ها (جدا از readIds)
+  // ۲. به‌روزرسانی دوره‌ای اعلان‌ها (هر ۶۰ ثانیه و فقط وقتی تب فعال است)
   useEffect(() => {
     let isMounted = true;
 
+    const readIdsFromStorage = (): string[] => {
+      try {
+        const saved = localStorage.getItem("read_notifications");
+        const parsed = saved ? JSON.parse(saved) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    };
+
     const fetchNotifications = async () => {
+      if (typeof document !== "undefined" && document.hidden) return;
       try {
         const dashRes = await fetch(`${API_URL}/admin/dashboard`, {
           credentials: "include",
@@ -176,6 +179,7 @@ export default function AdminLayout({
         if (dashRes.ok && isMounted) {
           const dashData = await dashRes.json();
           // فیلتر کردن اعلان‌های خوانده‌شده
+          const readIds = readIdsFromStorage();
           const unread = dashData.data.inquiries.recent.filter(
             (n: Notification) => !readIds.includes(n.id),
           );
@@ -186,24 +190,15 @@ export default function AdminLayout({
       }
     };
 
-    // اجرای اولیه
+    // اجرای اولیه و سپس هر ۶۰ ثانیه
     fetchNotifications();
-
-    // اجرای دوره‌ای هر ۱۰ ثانیه (برای تست سریع‌تر)
-    const interval = setInterval(fetchNotifications, 10000);
+    const interval = setInterval(fetchNotifications, 60000);
 
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [readIds]); //  فقط به readIds وابسته است
-
-  // ۳. ذخیره readIds در localStorage هنگام تغییر
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("read_notifications", JSON.stringify(readIds));
-    }
-  }, [readIds]);
+  }, []);
 
   // ۴. بستن منوها با کلیک بیرون
   useEffect(() => {
@@ -272,7 +267,20 @@ export default function AdminLayout({
   };
 
   const handleNotificationClick = (id: string) => {
-    setReadIds((prev) => [...prev, id]);
+    try {
+      const saved = localStorage.getItem("read_notifications");
+      const parsed = saved ? JSON.parse(saved) : [];
+      const current: string[] = Array.isArray(parsed) ? parsed : [];
+      if (!current.includes(id)) {
+        localStorage.setItem(
+          "read_notifications",
+          JSON.stringify([...current, id]),
+        );
+      }
+    } catch {
+      /* ذخیره‌سازی محلی اختیاری است */
+    }
+    setNotifications((prev) => prev.filter((item) => item.id !== id));
     setIsNotificationsOpen(false);
   };
 
@@ -383,7 +391,8 @@ export default function AdminLayout({
         {/* ====== MAIN CONTENT ====== */}
         <div
           className={cn(
-            "flex-1 flex flex-col min-h-screen transition-all duration-300",
+            // min-w-0 تا جدول‌ها و تب‌های عریض، ستون محتوا را در موبایل بیرون نزنند
+            "flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300",
             isCollapsed ? "mr-0 lg:mr-[80px]" : "mr-0 lg:mr-[240px]",
           )}
         >
@@ -406,9 +415,9 @@ export default function AdminLayout({
                   <line x1="3" y1="18" x2="21" y2="18"></line>
                 </svg>
               </button>
-              <h2 className="text-lg font-bold text-primary hidden md:block">
+              <span className="text-lg font-bold text-primary hidden md:block">
                 پیشخوان
-              </h2>
+              </span>
             </div>
 
             <div className="hidden md:block relative w-[350px]" ref={searchRef}>
@@ -443,9 +452,9 @@ export default function AdminLayout({
                     )}
                   {searchResults.articles.length > 0 && (
                     <div className="p-2 border-b border-border">
-                      <h4 className="text-[10px] font-bold text-foreground-muted px-2 mb-1">
+                      <div className="text-[10px] font-bold text-foreground-muted px-2 mb-1">
                         مقالات
-                      </h4>
+                      </div>
                       {searchResults.articles.map((item) => (
                         <Link
                           key={item.id}
@@ -461,9 +470,9 @@ export default function AdminLayout({
                   )}
                   {searchResults.experiences.length > 0 && (
                     <div className="p-2 border-b border-border">
-                      <h4 className="text-[10px] font-bold text-foreground-muted px-2 mb-1">
+                      <div className="text-[10px] font-bold text-foreground-muted px-2 mb-1">
                         سوابق
-                      </h4>
+                      </div>
                       {searchResults.experiences.map((item) => (
                         <Link
                           key={item.id}
@@ -479,9 +488,9 @@ export default function AdminLayout({
                   )}
                   {searchResults.agencies.length > 0 && (
                     <div className="p-2">
-                      <h4 className="text-[10px] font-bold text-foreground-muted px-2 mb-1">
+                      <div className="text-[10px] font-bold text-foreground-muted px-2 mb-1">
                         کارگزاری‌ها
-                      </h4>
+                      </div>
                       {searchResults.agencies.map((item) => (
                         <Link
                           key={item.id}

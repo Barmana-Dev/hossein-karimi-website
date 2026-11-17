@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { API_URL, assetUrl } from "@/lib/api";
+import { API_URL, assetUrl, fetchDetail } from "@/lib/api";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import {
   ArrowRight,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Badge } from "@/components/ui/Badge";
+import { DataErrorState } from "@/components/ui/DataErrorState";
 import { toPersianNumber, formatDate } from "@/lib/utils";
 
 interface Article {
@@ -35,18 +36,9 @@ interface RelatedArticle {
   category: string;
 }
 
-async function getArticle(slug: string): Promise<Article | null> {
-  try {
-    // 👇 بدون کش، تا تغییر تصویر شاخص بلافاصله بعد از ذخیره دیده شود
-    const res = await fetch(`${API_URL}/public/articles/${slug}`, {
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.data;
-  } catch {
-    return null;
-  }
+// 👇 بدون کش، تا تغییر تصویر شاخص بلافاصله بعد از ذخیره دیده شود
+function getArticle(slug: string) {
+  return fetchDetail<Article>(`${API_URL}/public/articles/${slug}`);
 }
 
 async function getRelatedArticles(
@@ -80,10 +72,10 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const article = await getArticle(slug);
+  const result = await getArticle(slug);
   return {
-    title: article?.title || "مقاله",
-    description: article?.excerpt,
+    title: result.status === "ok" ? result.data.title : "مقاله",
+    description: result.status === "ok" ? result.data.excerpt : undefined,
   };
 }
 
@@ -94,12 +86,16 @@ export default async function ArticleDetailPage({
 }) {
   const { slug } = await params;
 
-  const [article, relatedArticles] = await Promise.all([
+  const [articleResult, relatedArticles] = await Promise.all([
     getArticle(slug),
     getRelatedArticles(slug),
   ]);
 
-  if (!article) notFound();
+  // 👇 فقط پاسخ ۴۰۴ صفحهٔ «پیدا نشد» می‌گیرد؛ خطای سرور پیام موقت دارد
+  if (articleResult.status === "error") return <DataErrorState />;
+  if (articleResult.status === "notfound") notFound();
+
+  const article = articleResult.data;
 
   return (
     <div className="pt-[100px] pb-24 bg-background min-h-screen">
@@ -157,7 +153,7 @@ export default async function ArticleDetailPage({
             {article.coverImage ? (
               <div className="w-full aspect-[16/9] rounded-2xl overflow-hidden mb-12 border border-border relative bg-gray-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <img decoding="async"
                   src={assetUrl(article.coverImage)}
                   alt={article.title}
                   className="w-full h-full object-cover"

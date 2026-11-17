@@ -87,6 +87,7 @@ export default function AdminExpertisePage() {
       </div>
 
       <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm text-right">
           <thead className="bg-background text-foreground-muted text-xs border-b border-border">
             <tr>
@@ -132,6 +133,7 @@ export default function AdminExpertisePage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mt-6">

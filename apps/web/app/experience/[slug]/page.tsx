@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Building2, Calendar, UserRound } from "lucide-react";
-import { API_URL } from "@/lib/api";
+import { API_URL, fetchDetail, safeExternalUrl } from "@/lib/api";
+import { DataErrorState } from "@/components/ui/DataErrorState";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -29,18 +30,10 @@ const categoryLabels: Record<string, string> = {
   business: "کسب‌وکار",
 };
 
-async function getExperience(slug: string): Promise<Experience | null> {
-  try {
-    const res = await fetch(
-      `${API_URL}/public/experience/${encodeURIComponent(slug)}`,
-      { next: { revalidate: 60 } },
-    );
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.data;
-  } catch {
-    return null;
-  }
+function getExperience(slug: string) {
+  return fetchDetail<Experience>(
+    `${API_URL}/public/experience/${encodeURIComponent(slug)}`,
+  );
 }
 
 export async function generateMetadata({
@@ -49,10 +42,11 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const experience = await getExperience(slug);
+  const result = await getExperience(slug);
   return {
-    title: experience?.title || "سابقه حرفه‌ای",
-    description: experience?.description?.slice(0, 150),
+    title: result.status === "ok" ? result.data.title : "سابقه حرفه‌ای",
+    description:
+      result.status === "ok" ? result.data.description.slice(0, 150) : undefined,
   };
 }
 
@@ -62,9 +56,13 @@ export default async function ExperienceDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const experience = await getExperience(slug);
+  const result = await getExperience(slug);
 
-  if (!experience) notFound();
+  // 👇 فقط پاسخ ۴۰۴ صفحهٔ «پیدا نشد» می‌گیرد؛ خطای سرور پیام موقت دارد
+  if (result.status === "error") return <DataErrorState />;
+  if (result.status === "notfound") notFound();
+
+  const experience = result.data;
 
   const period = experience.startDate
     ? `${formatDate(experience.startDate)}${
@@ -129,9 +127,9 @@ export default async function ExperienceDetailPage({
               </p>
             </div>
 
-            {experience.sourceUrl && (
+            {safeExternalUrl(experience.sourceUrl) && (
               <a
-                href={experience.sourceUrl}
+                href={safeExternalUrl(experience.sourceUrl) ?? undefined}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block mt-8 text-sm font-bold text-accent hover:underline"

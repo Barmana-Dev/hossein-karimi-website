@@ -289,7 +289,7 @@ export default function EditAgencyPage() {
             {formData.logoImage ? (
               <div className="relative aspect-square rounded-xl overflow-hidden border border-border group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <img loading="lazy" decoding="async"
                   src={assetUrl(formData.logoImage)}
                   alt="Logo"
                   className="w-full h-full object-cover"

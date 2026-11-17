@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { Scale, Package, Globe, Users, LucideIcon } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
-import { API_URL } from "@/lib/api";
+import { API_URL, fetchDetail } from "@/lib/api";
+import { DataErrorState } from "@/components/ui/DataErrorState";
 
 interface Expertise {
   id: string;
@@ -22,17 +23,8 @@ const iconMap: Record<string, LucideIcon> = {
   users: Users,
 };
 
-async function getExpertise(slug: string): Promise<Expertise | null> {
-  try {
-    const res = await fetch(`${API_URL}/public/expertise/${slug}`, {
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.data;
-  } catch {
-    return null;
-  }
+function getExpertise(slug: string) {
+  return fetchDetail<Expertise>(`${API_URL}/public/expertise/${slug}`);
 }
 
 export async function generateMetadata({
@@ -41,8 +33,10 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const expertise = await getExpertise(slug);
-  return { title: expertise?.title || "حوزه تخصصی" };
+  const result = await getExpertise(slug);
+  return {
+    title: result.status === "ok" ? result.data.title : "حوزه تخصصی",
+  };
 }
 
 export default async function ExpertiseDetailPage({
@@ -51,9 +45,13 @@ export default async function ExpertiseDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const expertise = await getExpertise(slug);
+  const result = await getExpertise(slug);
 
-  if (!expertise) notFound();
+  // 👇 فقط پاسخ ۴۰۴ صفحهٔ «پیدا نشد» می‌گیرد؛ خطای سرور پیام موقت دارد
+  if (result.status === "error") return <DataErrorState />;
+  if (result.status === "notfound") notFound();
+
+  const expertise = result.data;
 
   const Icon = iconMap[expertise.icon] || Scale;
 

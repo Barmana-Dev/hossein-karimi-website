@@ -3,9 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NetworkController = void 0;
 const network_service_1 = require("./network.service");
 const client_1 = require("../../generated/prisma/client");
+const validators_1 = require("../../validators");
+const zod_1 = require("zod");
 const networkService = new network_service_1.NetworkService();
 class NetworkController {
-    // ====== متدهای عمومی ======
     async getAll(req, res) {
         try {
             const agencies = await networkService.getPublishedAgencies();
@@ -31,7 +32,6 @@ class NetworkController {
             res.status(500).json({ success: false, error: { message } });
         }
     }
-    // ====== متدهای مدیریتی ======
     async adminGetAll(req, res) {
         try {
             const agencies = await networkService.getAllAgenciesForAdmin();
@@ -44,11 +44,20 @@ class NetworkController {
     }
     async adminCreate(req, res) {
         try {
-            // 👇 ارسال مستقیم req.body به سرویس (شامل logoImage)
-            const agency = await networkService.createAgency(req.body);
+            const validated = validators_1.agencyCreateSchema.parse(req.body);
+            const agency = await networkService.createAgency(validated);
             res.status(201).json({ success: true, data: agency });
         }
         catch (error) {
+            if (error instanceof zod_1.ZodError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: "VALIDATION_ERROR",
+                        fields: error.flatten().fieldErrors,
+                    },
+                });
+            }
             if (error instanceof client_1.Prisma.PrismaClientKnownRequestError &&
                 error.code === "P2002") {
                 return res.status(400).json({
@@ -76,11 +85,20 @@ class NetworkController {
     }
     async adminUpdate(req, res) {
         try {
-            // 👇 ارسال مستقیم req.body به سرویس (شامل logoImage)
-            const agency = await networkService.updateAgency(req.params.id, req.body);
+            const validated = validators_1.agencyUpdateSchema.parse(req.body);
+            const agency = await networkService.updateAgency(req.params.id, validated);
             res.json({ success: true, data: agency });
         }
         catch (error) {
+            if (error instanceof zod_1.ZodError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: "VALIDATION_ERROR",
+                        fields: error.flatten().fieldErrors,
+                    },
+                });
+            }
             if (error instanceof client_1.Prisma.PrismaClientKnownRequestError &&
                 error.code === "P2002") {
                 return res.status(400).json({

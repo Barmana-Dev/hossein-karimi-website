@@ -239,7 +239,7 @@ export default function NetworkIndexPage() {
                     <div className="w-12 h-12 rounded-xl bg-background text-primary flex items-center justify-center font-black text-lg border border-border group-hover:bg-accent group-hover:text-white group-hover:border-accent transition-all duration-500 overflow-hidden">
                       {agency.logoImage ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <img loading="lazy" decoding="async"
                           src={assetUrl(agency.logoImage)}
                           alt={agency.name}
                           className="w-full h-full object-cover"
@@ -258,9 +258,9 @@ export default function NetworkIndexPage() {
                     href={`/network/${agency.slug}`}
                     className="block group-hover:-translate-y-0.5 transition-transform duration-300"
                   >
-                    <h3 className="text-lg font-bold text-primary mb-2 transition-colors group-hover:text-accent">
+                    <h2 className="text-lg font-bold text-primary mb-2 transition-colors group-hover:text-accent">
                       {agency.name}
-                    </h3>
+                    </h2>
                     <p className="text-xs text-foreground-muted leading-[1.8] mb-5 line-clamp-2">
                       {agency.description}
                     </p>

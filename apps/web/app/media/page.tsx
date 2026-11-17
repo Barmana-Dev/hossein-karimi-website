@@ -58,7 +58,7 @@ export default function MediaPage() {
   return (
     <div className="pt-[120px] pb-24 bg-background min-h-screen">
       <Container>
-        <SectionHead kicker="رسانه" title="اخبار، مصاحبه‌ها و رویدادها" />
+        <SectionHead as="h1" kicker="رسانه" title="اخبار، مصاحبه‌ها و رویدادها" />
         {isLoading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="animate-spin text-accent" size={40} />
@@ -74,9 +74,9 @@ export default function MediaPage() {
                   <Badge variant="accent" className="mb-4 w-fit">
                     {item.type}
                   </Badge>
-                  <h3 className="text-lg font-bold text-primary mb-3">
+                  <h2 className="text-lg font-bold text-primary mb-3">
                     {item.title}
-                  </h3>
+                  </h2>
                   <p className="text-sm text-foreground-muted leading-relaxed mb-6 line-clamp-3 flex-1">
                     {item.description}
                   </p>

@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
         "warn",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
+      // پروژه App Router است و پوشهٔ pages ندارد؛ این قاعده کاربرد ندارد
+      "@next/next/no-html-link-for-pages": "off",
     },
   },
   // Override default ignores of eslint-config-next.

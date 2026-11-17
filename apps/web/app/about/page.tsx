@@ -53,7 +53,7 @@ export default async function AboutPage() {
   return (
     <div className="pt-[120px] pb-24 bg-background min-h-screen">
       <Container>
-        <SectionHead kicker="درباره من" title={settings?.siteTitle} />
+        <SectionHead as="h1" kicker="درباره من" title={settings?.siteTitle} />
 
         <div className="grid lg:grid-cols-[1fr_1.8fr] gap-8 lg:gap-12 items-start max-w-[1100px] mx-auto">
           {/* ستون راست (در RTL): پروفایل و اطلاعات کلیدی */}
@@ -66,7 +66,7 @@ export default async function AboutPage() {
               <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-gradient-to-br from-primary-light to-primary border border-white/10 flex flex-col items-center justify-center text-white/50 mb-6">
                 {settings?.portraitImage ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={assetUrl(settings.portraitImage)}
                     alt="پرتره رسمی"
                     className="absolute inset-0 w-full h-full object-cover z-0"
@@ -93,9 +93,9 @@ export default async function AboutPage() {
 
               {/* اطلاعات کلیدی */}
               <div className="relative z-10">
-                <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                <h2 className="text-white font-bold mb-4 flex items-center gap-2">
                   <Target size={18} className="text-accent" /> اطلاعات کلیدی
-                </h3>
+                </h2>
                 <ul className="space-y-4 text-sm">
                   <li className="flex justify-between border-b border-white/10 pb-2">
                     <span className="text-white/60">حوزه فعالیت:</span>
@@ -193,9 +193,9 @@ export default async function AboutPage() {
                           <Award size={18} />
                         </div>
                         <div>
-                          <h4 className="font-bold text-primary text-lg">
+                          <h3 className="font-bold text-primary text-lg">
                             {edu.title}
-                          </h4>
+                          </h3>
                           <p className="text-sm text-foreground-muted mt-1 mb-2">
                             {edu.organization}
                           </p>
@@ -221,9 +221,9 @@ export default async function AboutPage() {
             {/* رویکرد حرفه‌ای */}
             <div className="bg-gradient-to-l from-primary to-primary-light rounded-3xl p-8 md:p-10 text-white relative overflow-hidden shadow-lg">
               <div className="absolute -right-10 -top-10 w-40 h-40 bg-accent/20 rounded-full blur-[40px] pointer-events-none" />
-              <h3 className="text-xl font-bold mb-4 relative z-10 text-accent-light">
+              <h2 className="text-xl font-bold mb-4 relative z-10 text-accent-light">
                 رویکرد حرفه‌ای
-              </h3>
+              </h2>
               <p className="text-white/80 leading-[2] relative z-10 text-justify text-[15px]">
                 «ارائه مشاوره و راهکارهای تخصصی بر پایه اصول حرفه‌ای، شفافیت و
                 درک عمیق از پیچیدگی‌های حقوقی، گمرکی و تجاری.»

@@ -10,7 +10,7 @@ class NetworkService {
         });
     }
     async getAgencyBySlug(slug) {
-        return prisma_1.prisma.agency.findUnique({
+        return prisma_1.prisma.agency.findFirst({
             where: { slug, status: "published" },
         });
     }

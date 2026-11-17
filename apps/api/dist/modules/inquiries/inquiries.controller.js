@@ -4,6 +4,7 @@ exports.InquiriesController = void 0;
 const inquiries_service_1 = require("./inquiries.service");
 const zod_1 = require("zod");
 const prisma_1 = require("../../config/prisma");
+const validators_1 = require("../../validators");
 const inquiriesService = new inquiries_service_1.InquiriesService();
 class InquiriesController {
     // ثبت عمومی
@@ -50,18 +51,31 @@ class InquiriesController {
                     .json({ success: false, error: { message: "یافت نشد" } });
             res.json({ success: true, data });
         }
-        catch (error) {
+        catch {
             res.status(500).json({ success: false, error: { message: "خطا" } });
         }
     }
     // تغییر وضعیت (ادمین)
     async adminUpdate(req, res) {
         try {
-            const data = await inquiriesService.updateInquiry(req.params.id, req.body);
+            // 👇 فقط وضعیت و یادداشت داخلی قابل تغییر است
+            const validated = validators_1.inquiryUpdateSchema.parse(req.body);
+            const data = await inquiriesService.updateInquiry(req.params.id, validated);
             res.json({ success: true, data });
         }
         catch (error) {
-            res.status(500).json({ success: false, error: { message: "خطا" } });
+            if (error instanceof zod_1.ZodError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: "VALIDATION_ERROR",
+                        message: "اطلاعات ارسالی معتبر نیست.",
+                        fields: error.flatten().fieldErrors,
+                    },
+                });
+            }
+            const message = error instanceof Error ? error.message : "خطا";
+            res.status(500).json({ success: false, error: { message } });
         }
     }
     // 👇 حذف درخواست (ادمین)

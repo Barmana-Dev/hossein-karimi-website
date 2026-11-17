@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
+import { ZodError } from "zod";
 import { ProfileService } from "./profile.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
+import { settingsUpdateSchema } from "../../validators";
 
 const profileService = new ProfileService();
 
@@ -20,9 +22,20 @@ export class ProfileController {
   // ۲. به‌روزرسانی تنظیمات (ادمین)
   async update(req: AuthRequest, res: Response) {
     try {
-      const data = await profileService.updateSettings(req.body);
+      const validated = settingsUpdateSchema.parse(req.body);
+      const data = await profileService.updateSettings(validated);
       res.json({ success: true, data, message: "تنظیمات با موفقیت ذخیره شد." });
     } catch (error: unknown) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "اطلاعات ارسالی معتبر نیست.",
+            fields: error.flatten().fieldErrors,
+          },
+        });
+      }
       const message =
         error instanceof Error ? error.message : "خطا در ذخیره تنظیمات";
       res.status(500).json({ success: false, error: { message } });

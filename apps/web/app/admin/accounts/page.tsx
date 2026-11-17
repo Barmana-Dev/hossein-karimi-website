@@ -133,6 +133,7 @@ export default function AdminAccountsPage() {
       </div>
 
       <div className="bg-white border border-border rounded-2xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm text-right">
           <thead className="bg-background text-xs border-b border-border">
             <tr>
@@ -206,6 +207,7 @@ export default function AdminAccountsPage() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       {editingUserId && (

@@ -1,6 +1,16 @@
 import { z } from "zod";
 
 // ===== Experience =====
+// 👇 فقط آدرس http/https یا مقدار خالی/تهی پذیرفته می‌شود (جلوگیری از javascript:)
+const optionalExternalUrl = z
+  .string()
+  .max(500)
+  .refine((value) => value === "" || /^https?:\/\//i.test(value), {
+    message: "آدرس باید با http یا https شروع شود",
+  })
+  .nullable()
+  .optional();
+
 export const experienceCreateSchema = z.object({
   slug: z.string().min(1, "اسلاگ الزامی است").max(100),
   title: z.string().min(1, "عنوان الزامی است").max(200),
@@ -11,6 +21,7 @@ export const experienceCreateSchema = z.object({
   status: z.enum(["published", "draft"]),
   startDate: z.string().datetime().nullable().optional(),
   endDate: z.string().datetime().nullable().optional(),
+  sourceUrl: optionalExternalUrl,
 });
 
 export const experienceUpdateSchema = experienceCreateSchema.partial();
@@ -46,7 +57,7 @@ export const agencyCreateSchema = z.object({
   relationType: z.string().min(1, "نوع ارتباط الزامی است").max(50),
   relationDescription: z.string().nullable().optional(),
   city: z.string().nullable().optional(),
-  websiteUrl: z.string().nullable().optional(),
+  websiteUrl: optionalExternalUrl,
   logoImage: z.string().nullable().optional(),
   featured: z.boolean().optional(),
   status: z.enum(["published", "draft"], { message: "وضعیت نامعتبر است" }),
@@ -84,3 +95,115 @@ export const mediaCreateSchema = z.object({
 });
 
 export const mediaUpdateSchema = mediaCreateSchema.partial();
+
+// ===== تنظیمات سایت =====
+const optionalUrl = z
+  .string()
+  .max(500)
+  .refine((value) => value === "" || /^https?:\/\//i.test(value), {
+    message: "آدرس باید با http یا https شروع شود",
+  })
+  .nullable()
+  .optional();
+
+const optionalText = (max = 20000) =>
+  z.string().max(max, "متن بیش از حد طولانی است").nullable().optional();
+
+export const settingsUpdateSchema = z
+  .object({
+    siteTitle: z
+      .string()
+      .min(1, "عنوان سایت نمی‌تواند خالی باشد")
+      .max(200)
+      .optional(),
+    subtitle: z.string().max(200).optional(),
+    biographyShort: z.string().max(2000).optional(),
+    contactEmail: z
+      .string()
+      .max(200)
+      .refine((value) => value === "" || z.string().email().safeParse(value).success, {
+        message: "ایمیل نامعتبر است",
+      })
+      .optional(),
+    phone: z.string().max(50).optional(),
+    address: optionalText(500),
+    instagramUrl: optionalUrl,
+    linkedinUrl: optionalUrl,
+    telegramUrl: optionalUrl,
+    seoTitle: optionalText(200),
+    seoDescription: optionalText(500),
+    portraitImage: optionalText(500),
+    aboutContent: optionalText(100000),
+    keyField: optionalText(200),
+    keyDegree: optionalText(200),
+    keyLanguages: optionalText(200),
+    contactContent: optionalText(100000),
+    termsContent: optionalText(100000),
+    privacyContent: optionalText(100000),
+  })
+  .strict();
+
+// ===== کاربران ادمین =====
+export const adminRoleSchema = z.enum(
+  ["SUPER_ADMIN", "EDITOR", "INQUIRY_MANAGER"],
+  { message: "نقش نامعتبر است" },
+);
+
+const emailField = z
+  .string()
+  .trim()
+  .email("ایمیل نامعتبر است")
+  .max(200)
+  .transform((value) => value.toLowerCase());
+
+const passwordField = z
+  .string()
+  .min(8, "رمز عبور باید حداقل ۸ کاراکتر باشد")
+  .max(200, "رمز عبور بیش از حد طولانی است");
+
+export const adminUserCreateSchema = z
+  .object({
+    name: z.string().trim().min(2, "نام الزامی است").max(120),
+    email: emailField,
+    password: passwordField,
+    role: adminRoleSchema,
+    isActive: z.boolean().optional(),
+  })
+  .strict();
+
+export const adminUserUpdateSchema = z
+  .object({
+    name: z.string().trim().min(2, "نام الزامی است").max(120).optional(),
+    email: emailField.optional(),
+    password: passwordField.optional().or(z.literal("")),
+    role: adminRoleSchema.optional(),
+    isActive: z.boolean().optional(),
+  })
+  .strict();
+
+export const profileUpdateSchema = z
+  .object({
+    name: z.string().trim().min(2, "نام الزامی است").max(120).optional(),
+    email: emailField.optional(),
+    password: passwordField.optional().or(z.literal("")),
+  })
+  .strict();
+
+// ===== تغییر وضعیت درخواست تماس =====
+export const inquiryUpdateSchema = z
+  .object({
+    status: z
+      .enum(["new", "in_review", "contacted", "closed"], {
+        message: "وضعیت نامعتبر است",
+      })
+      .optional(),
+    internalNote: z
+      .string()
+      .max(4000, "یادداشت داخلی بیش از حد طولانی است")
+      .nullable()
+      .optional(),
+  })
+  .strict()
+  .refine((data) => data.status !== undefined || data.internalNote !== undefined, {
+    message: "هیچ فیلد قابل تغییری ارسال نشده است",
+  });

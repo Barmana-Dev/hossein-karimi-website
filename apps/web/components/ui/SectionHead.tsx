@@ -6,6 +6,8 @@ interface SectionHeadProps {
   description?: string;
   variant?: "light" | "dark";
   align?: "center" | "right";
+  // 👇 تیتر اصلی هر صفحه باید h1 باشد؛ در بخش‌های داخلی h2 می‌ماند
+  as?: "h1" | "h2";
 }
 
 export function SectionHead({
@@ -14,6 +16,7 @@ export function SectionHead({
   description,
   variant = "light",
   align = "center",
+  as: Heading = "h2",
 }: SectionHeadProps) {
   const isDark = variant === "dark";
   return (
@@ -37,14 +40,14 @@ export function SectionHead({
           <span className="w-8 h-px bg-gradient-to-r from-transparent to-accent" />
         )}
       </span>
-      <h2
+      <Heading
         className={cn(
           "text-[clamp(30px,3.8vw,35px)] font-extrabold tracking-[-0.025em] leading-[1.3] mb-[18px]",
           isDark ? "text-white" : "text-primary",
         )}
       >
         {title}
-      </h2>
+      </Heading>
       {description && (
         <p
           className={cn(

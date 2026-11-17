@@ -6,13 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
-const dotenv_1 = __importDefault(require("dotenv"));
-const path_1 = __importDefault(require("path"));
-const media_routes_1 = __importDefault(require("./modules/media/media.routes"));
-const swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
+const helmet_1 = __importDefault(require("helmet"));
+const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 const swagger_json_1 = __importDefault(require("./swagger.json"));
-const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
+const env_1 = require("./config/env");
+const prisma_1 = require("./config/prisma");
 // ایمپورت مسیرها
 const auth_routes_1 = __importDefault(require("./modules/auth/auth.routes"));
 const articles_routes_1 = __importDefault(require("./modules/articles/articles.routes"));
@@ -24,31 +23,41 @@ const profile_routes_1 = __importDefault(require("./modules/profile/profile.rout
 const dashboard_routes_1 = __importDefault(require("./modules/dashboard/dashboard.routes"));
 const search_routes_1 = __importDefault(require("./modules/search/search.routes"));
 const profile_public_routes_1 = __importDefault(require("./modules/profile/profile.public.routes"));
-const inquiries_routes_2 = __importDefault(require("./modules/inquiries/inquiries.routes"));
-dotenv_1.default.config();
+const media_routes_1 = __importDefault(require("./modules/media/media.routes"));
 const app = (0, express_1.default)();
+app.disable("x-powered-by");
+// 👇 پشت پراکسی (nginx/Cloudflare) برای محدودیت نرخ درخواست لازم است
+if (env_1.config.trustProxy > 0) {
+    app.set("trust proxy", env_1.config.trustProxy);
+}
+// ====== هدرهای امنیتی ======
+app.use((0, helmet_1.default)({
+    // تصاویر آپلودشده از دامنهٔ فرانت‌اند نمایش داده می‌شوند
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    // این API صفحهٔ HTML سرو نمی‌کند؛ CSP روی Swagger اعمال نمی‌شود
+    contentSecurityPolicy: false,
+}));
 // ====== تنظیمات CORS ======
 app.use((0, cors_1.default)({
-    origin: "http://localhost:3000", // آدرس دقیق فرانت‌اند (بدون ستاره)
-    credentials: true, // اجازه ارسال کوکی
+    origin(origin, callback) {
+        // درخواست‌های بدون Origin (curl یا سرور) مجازند
+        if (!origin || env_1.config.corsOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        // بدون هدر CORS پاسخ می‌دهیم تا مرورگر آن را مسدود کند
+        return callback(null, false);
+    },
+    credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
 }));
-// 👇 محدودیت برای فرم تماس (حداکثر ۵ درخواست در ۱۵ دقیقه)
-const inquiryLimiter = (0, express_rate_limit_1.default)({
-    windowMs: 15 * 60 * 1000, // 15 دقیقه
-    max: process.env.NODE_ENV === "production" ? 5 : 100, // حداکثر 5 درخواست
-    message: {
-        success: false,
-        error: {
-            message: "تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً بعداً تلاش کنید.",
-        },
-    },
-});
-// 👇 محدودیت برای لاگین (حداکثر ۱۰ تلاش در ۱۵ دقیقه)
+// 👇 محدودیت برای لاگین (فقط تلاش‌های ناموفق شمرده می‌شوند)
 const loginLimiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000,
-    max: process.env.NODE_ENV === "production" ? 10 : 100,
+    max: env_1.config.loginRateLimitMax,
+    skipSuccessfulRequests: true,
+    standardHeaders: true,
+    legacyHeaders: false,
     message: {
         success: false,
         error: {
@@ -56,50 +65,85 @@ const loginLimiter = (0, express_rate_limit_1.default)({
         },
     },
 });
-// اعمال محدودیت‌ها
-app.use("/api/v1/public/inquiries", inquiryLimiter);
 app.use("/api/v1/auth/login", loginLimiter);
-// 👇 تنظیمات امنیتی برای نمایش عکس‌ها (بدون تداخل با CORS)
-app.use((req, res, next) => {
-    res.header("Cross-Origin-Resource-Policy", "cross-origin");
-    next();
+// 👇 محدودیت کلی API (محافظت در برابر ارسال انبوه درخواست)
+const apiLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 15 * 60 * 1000,
+    max: env_1.config.apiRateLimitMax,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        error: { message: "تعداد درخواست‌ها بیش از حد مجاز است." },
+    },
 });
-// ۳. محدودیت حجم داده ارسالی (جلوگیری از حملات DOS)
+app.use("/api", apiLimiter);
+// ====== بدنه و کوکی ======
 app.use(express_1.default.json({ limit: "100kb" }));
-// ۴. پشتیبانی از کوکی‌ها
 app.use((0, cookie_parser_1.default)());
+// ==================== سلامت سرویس ====================
+app.get("/api/health", (req, res) => res.json({ status: "ok", env: env_1.config.appEnv }));
+// 👇 بررسی آمادگی دیتابیس (برای استقرار و مانیتورینگ)
+app.get("/api/health/db", async (req, res) => {
+    try {
+        await prisma_1.prisma.$queryRaw `SELECT 1`;
+        res.json({ status: "ok", database: "up" });
+    }
+    catch {
+        res
+            .status(503)
+            .json({ status: "error", database: "down", message: "اتصال دیتابیس برقرار نیست." });
+    }
+});
 // ==================== مسیرهای API ====================
-app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 app.use("/api/v1/auth", auth_routes_1.default);
 app.use("/api/v1/public/articles", articles_routes_1.default);
 app.use("/api/v1/public/network", network_routes_1.default);
 app.use("/api/v1/public/experience", experience_routes_1.default);
 app.use("/api/v1/public/expertise", expertise_routes_1.default);
 app.use("/api/v1/public/inquiries", inquiries_routes_1.default);
+app.use("/api/v1/public/media", media_routes_1.default);
+app.use("/api/v1/public/settings", profile_public_routes_1.default);
 app.use("/api/v1/admin/dashboard", dashboard_routes_1.default);
 app.use("/api/v1/admin/search", search_routes_1.default);
-app.use("/api/v1", inquiries_routes_2.default);
-// مسیر مدیریتی (برای پنل ادمین)
 app.use("/api/v1/admin/settings", profile_routes_1.default);
-app.use("/api/v1/public/settings", profile_public_routes_1.default);
-// سرو کردن فایل‌های آپلود شده
-app.use("/uploads", express_1.default.static(path_1.default.join(process.cwd(), "uploads")));
-app.use("/api/v1/public/media", media_routes_1.default);
+// سرو کردن فایل‌های آپلود شده (فقط تصاویر ذخیره می‌شوند)
+app.use("/uploads", express_1.default.static(env_1.config.uploadsDir, {
+    index: false,
+    dotfiles: "ignore",
+    maxAge: "7d",
+    setHeaders(res) {
+        res.setHeader("X-Content-Type-Options", "nosniff");
+    },
+}));
+// ==================== مسیر یافت نشد ====================
+app.use((req, res, next) => {
+    if (!req.path.startsWith("/api/"))
+        return next();
+    res.status(404).json({
+        success: false,
+        error: { message: "این مسیر در API وجود ندارد." },
+    });
+});
 // ==================== مدیریت خطای سراسری ====================
-app.use((err, req, res, next) => {
-    // چون err از نوع unknown است، باید بررسی کنیم که آیا یک Error است یا نه
+app.use((err, req, res, _next) => {
     let message = "خطای داخلی سرور رخ داده است.";
     let status = 500;
     if (err instanceof Error) {
         message = err.message;
-        // اگر خطای ما پراپرتی status داشت (مثل خطاهای HTTP)
-        if ("status" in err) {
+        if ("status" in err && typeof err.status === "number") {
             status = err.status;
         }
     }
-    console.error("🔴 Server Error:", message); // لاگ کردن برای توسعه‌دهنده
-    // در محیط production پیام امن‌تر ارسال می‌شود
-    const finalMessage = process.env.NODE_ENV === "production"
+    // در پروداکشن جزئیات خطا فقط در لاگ سرور می‌ماند
+    if (env_1.config.isProduction) {
+        console.error("🔴 Server Error:", err instanceof Error ? err.message : err);
+    }
+    else {
+        console.error("🔴 Server Error:", err instanceof Error ? err.stack : err);
+    }
+    // در پروداکشن پیام داخلی لو نمی‌رود
+    const finalMessage = env_1.config.isProduction
         ? "خطای داخلی سرور رخ داده است."
         : message;
     res.status(status).json({
@@ -107,41 +151,14 @@ app.use((err, req, res, next) => {
         error: { message: finalMessage },
     });
 });
-// ==================== تنظیمات Swagger ====================
-const swaggerOptions = {
-    definition: {
-        openapi: "3.0.0",
-        info: {
-            title: "API سایت دکتر حسین کریمی",
-            version: "1.0.0",
-            description: "مستندات APIهای عمومی و مدیریتی سایت شخصی دکتر حسین کریمی",
-        },
-        servers: [
-            {
-                url: "http://localhost:4000",
-                description: "سرور توسعه (Local)",
-            },
-        ],
-        components: {
-            securitySchemes: {
-                cookieAuth: {
-                    type: "apiKey",
-                    in: "cookie",
-                    name: "token",
-                },
-            },
-        },
-    },
-    // مسیر فایل‌هایی که کامنت‌های Swagger در آن‌ها قرار دارد
-    apis: ["./src/modules/**/*.routes.ts"],
-};
-const swaggerSpec = (0, swagger_jsdoc_1.default)(swaggerOptions);
-// مسیر دسترسی به مستندات
-app.use("/api-docs", swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swaggerSpec));
-// مسیر دسترسی به مستندات
-app.use("/api-docs", swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swagger_json_1.default));
+// ==================== مستندات Swagger ====================
+if (env_1.config.enableSwagger) {
+    app.use("/api-docs", swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swagger_json_1.default, {
+        swaggerOptions: { persistAuthorization: true },
+    }));
+}
 // ==================== اجرای سرور ====================
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-    console.log(`🚀 Server is running on http://localhost:${PORT}`);
+app.listen(env_1.config.port, () => {
+    console.log(`🚀 API [${env_1.config.appEnv}] روی http://localhost:${env_1.config.port} اجرا شد`);
 });
+exports.default = app;

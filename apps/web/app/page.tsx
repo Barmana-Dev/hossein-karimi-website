@@ -6,7 +6,7 @@ import { ArticlesPreview } from "@/components/home/ArticlesPreview";
 import { CtaBand } from "@/components/home/CtaBand";
 import { HomeSectionNotice } from "@/components/home/HomeSectionNotice";
 import { Reveal } from "@/components/ui/Reveal";
-import { API_URL } from "@/lib/api";
+import { API_URL, isNextControlFlowError } from "@/lib/api";
 import { Metadata } from "next";
 
 // export const instant = false;
@@ -84,6 +84,8 @@ async function fetchData<T>(url: string): Promise<FetchResult<T>> {
     const json = await res.json();
     return { data: (json.data ?? null) as T, ok: true };
   } catch (error) {
+    // خطاهای کنترلی Next را عبور می‌دهیم تا رندر داینامیک/ریدایرکت درست کار کند
+    if (isNextControlFlowError(error)) throw error;
     console.error("🔴 API unreachable:", url, error);
     return { data: null, ok: false };
   }

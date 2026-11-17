@@ -1,7 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ArticlesService = void 0;
+exports.ArticlesService = exports.ArticleNotFoundError = void 0;
 const prisma_1 = require("../../config/prisma");
+// 👇 خطای «یافت نشد» تا کنترلر بتواند ۴۰۴ برگرداند (نه ۵۰۰)
+class ArticleNotFoundError extends Error {
+    constructor() {
+        super("مقاله یافت نشد");
+        this.name = "ArticleNotFoundError";
+    }
+}
+exports.ArticleNotFoundError = ArticleNotFoundError;
 class ArticlesService {
     // دریافت مقالات برای سایت عمومی
     async getPublishedArticles() {
@@ -11,7 +19,8 @@ class ArticlesService {
         });
     }
     async getArticleBySlug(slug) {
-        return prisma_1.prisma.article.findUnique({
+        // findFirst چون وضعیت هم شرط دارد (findUnique فقط کلید یکتا می‌پذیرد)
+        return prisma_1.prisma.article.findFirst({
             where: { slug, status: "published" },
         });
     }
@@ -40,12 +49,27 @@ class ArticlesService {
     }
     // ویرایش مقاله
     async updateArticle(id, data) {
+        const existing = await prisma_1.prisma.article.findUnique({
+            where: { id },
+            select: { publishedAt: true },
+        });
+        if (!existing)
+            throw new ArticleNotFoundError();
+        // 👇 تاریخ انتشار فقط در اولین انتشار ست می‌شود و با هر ویرایش عوض نمی‌شود
+        const publishedAt = data.publishedAt !== undefined
+            ? data.publishedAt
+                ? new Date(data.publishedAt)
+                : null
+            : data.status === "published" && !existing.publishedAt
+                ? new Date()
+                : undefined;
         return prisma_1.prisma.article.update({
             where: { id },
             data: {
                 ...data,
-                // اگر وضعیت به published تغییر کرد و قبلاً منتشر نشده بود
-                ...(data.status === "published" && { publishedAt: new Date() }),
+                // اگه coverImage ارسال شده، ذخیره کن (حتی اگه null باشه)
+                ...(data.coverImage !== undefined && { coverImage: data.coverImage }),
+                ...(publishedAt !== undefined && { publishedAt }),
             },
         });
     }

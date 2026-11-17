@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { ArticlesService } from "./articles.service";
+import { ArticlesService, ArticleNotFoundError } from "./articles.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
 import { Prisma } from "../../generated/prisma/client";
 import { articleCreateSchema, articleUpdateSchema } from "../../validators";
@@ -67,10 +67,15 @@ export class ArticlesAdminController {
       const id = req.params.id as string;
       const validated = articleUpdateSchema.parse(req.body);
 
-      console.log("📥 validated:", validated);
       const article = await articlesService.updateArticle(id, validated);
       res.json({ success: true, data: article });
     } catch (error: unknown) {
+      if (error instanceof ArticleNotFoundError) {
+        return res.status(404).json({
+          success: false,
+          error: { message: "مقاله یافت نشد" },
+        });
+      }
       if (error instanceof ZodError) {
         return res.status(400).json({
           success: false,
@@ -89,6 +94,15 @@ export class ArticlesAdminController {
           error: { message: "این اسلاگ قبلاً استفاده شده است." },
         });
       }
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2025"
+      ) {
+        return res.status(404).json({
+          success: false,
+          error: { message: "مقاله یافت نشد" },
+        });
+      }
       const message = error instanceof Error ? error.message : "خطای ناشناخته";
       res.status(500).json({ success: false, error: { message } });
     }
@@ -100,6 +114,15 @@ export class ArticlesAdminController {
       await articlesService.deleteArticle(id);
       res.json({ success: true, message: "مقاله با موفقیت حذف شد" });
     } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2025"
+      ) {
+        return res.status(404).json({
+          success: false,
+          error: { message: "مقاله یافت نشد" },
+        });
+      }
       const message = error instanceof Error ? error.message : "خطای ناشناخته";
       res.status(500).json({ success: false, error: { message } });
     }

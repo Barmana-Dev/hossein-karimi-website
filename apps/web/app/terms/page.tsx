@@ -27,6 +27,7 @@ export default async function TermsPage() {
       <Container className="max-w-[900px]">
         {/* هدر صفحه - عنوان دقیقاً "شرایط استفاده و سلب مسئولیت" */}
         <SectionHead
+          as="h1"
           kicker="قوانین و مقررات"
           title="شرایط استفاده و سلب مسئولیت"
         />

@@ -1,8 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MediaItemController = void 0;
+const zod_1 = require("zod");
 const media_service_1 = require("./media.service");
+const validators_1 = require("../../validators");
 const mediaService = new media_service_1.MediaItemService();
+function sendValidationError(res, error) {
+    return res.status(400).json({
+        success: false,
+        error: {
+            code: "VALIDATION_ERROR",
+            message: "اطلاعات ارسالی معتبر نیست.",
+            fields: error.flatten().fieldErrors,
+        },
+    });
+}
 class MediaItemController {
     async getAll(req, res) {
         try {
@@ -26,10 +38,14 @@ class MediaItemController {
     }
     async adminCreate(req, res) {
         try {
-            const data = await mediaService.createMedia(req.body);
+            const validated = validators_1.mediaCreateSchema.parse(req.body);
+            const data = await mediaService.createMedia(validated);
             res.status(201).json({ success: true, data });
         }
         catch (error) {
+            if (error instanceof zod_1.ZodError) {
+                return sendValidationError(res, error);
+            }
             const message = error instanceof Error ? error.message : "خطای ناشناخته";
             res.status(500).json({ success: false, error: { message } });
         }
@@ -50,10 +66,14 @@ class MediaItemController {
     }
     async adminUpdate(req, res) {
         try {
-            const data = await mediaService.updateMedia(req.params.id, req.body);
+            const validated = validators_1.mediaUpdateSchema.parse(req.body);
+            const data = await mediaService.updateMedia(req.params.id, validated);
             res.json({ success: true, data });
         }
         catch (error) {
+            if (error instanceof zod_1.ZodError) {
+                return sendValidationError(res, error);
+            }
             const message = error instanceof Error ? error.message : "خطای ناشناخته";
             res.status(500).json({ success: false, error: { message } });
         }

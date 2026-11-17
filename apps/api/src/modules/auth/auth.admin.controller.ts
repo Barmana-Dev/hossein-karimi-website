@@ -1,10 +1,35 @@
 import { Response } from "express";
+import { ZodError } from "zod";
 import { prisma } from "../../config/prisma";
 import { AuthRequest } from "../../middleware/auth.middleware";
+import { Prisma } from "../../generated/prisma/client";
 import bcrypt from "bcryptjs";
+import {
+  adminUserCreateSchema,
+  adminUserUpdateSchema,
+  profileUpdateSchema,
+} from "../../validators";
 
 // نقش‌های مجاز سیستم
 export const ALLOWED_ROLES = ["SUPER_ADMIN", "EDITOR", "INQUIRY_MANAGER"];
+
+function validationError(res: Response, error: ZodError) {
+  return res.status(400).json({
+    success: false,
+    error: {
+      code: "VALIDATION_ERROR",
+      message: "اطلاعات ارسالی معتبر نیست.",
+      fields: error.flatten().fieldErrors,
+    },
+  });
+}
+
+function isUniqueViolation(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  );
+}
 
 export class AuthAdminController {
   // دریافت لیست کاربران
@@ -18,6 +43,7 @@ export class AuthAdminController {
           role: true,
           isActive: true,
         },
+        orderBy: { createdAt: "asc" },
       });
       res.json({ success: true, data: users });
     } catch (error: unknown) {
@@ -29,21 +55,8 @@ export class AuthAdminController {
   // ایجاد کاربر جدید
   async createUser(req: AuthRequest, res: Response) {
     try {
-      const { name, email, password, role, isActive } = req.body;
-
-      if (!name || !email || !password) {
-        return res.status(400).json({
-          success: false,
-          error: { message: "نام، ایمیل و رمز عبور الزامی است" },
-        });
-      }
-
-      if (!ALLOWED_ROLES.includes(role)) {
-        return res.status(400).json({
-          success: false,
-          error: { message: "نقش انتخاب‌شده معتبر نیست" },
-        });
-      }
+      const { name, email, password, role, isActive } =
+        adminUserCreateSchema.parse(req.body);
 
       const existing = await prisma.adminUser.findUnique({ where: { email } });
       if (existing) {
@@ -60,7 +73,7 @@ export class AuthAdminController {
           email,
           passwordHash,
           role,
-          isActive: isActive ?? true, //  پیش‌فرض true
+          isActive: isActive ?? true,
         },
       });
 
@@ -71,10 +84,17 @@ export class AuthAdminController {
           name: user.name,
           email: user.email,
           role: user.role,
-          isActive: user.isActive, //  برگردون
+          isActive: user.isActive,
         },
       });
     } catch (error: unknown) {
+      if (error instanceof ZodError) return validationError(res, error);
+      if (isUniqueViolation(error)) {
+        return res.status(400).json({
+          success: false,
+          error: { message: "این ایمیل قبلاً ثبت شده است" },
+        });
+      }
       const message = error instanceof Error ? error.message : "خطای ناشناخته";
       res.status(500).json({ success: false, error: { message } });
     }
@@ -108,24 +128,16 @@ export class AuthAdminController {
   async updateUser(req: AuthRequest, res: Response) {
     try {
       const id = req.params.id as string;
-      const { name, email, role, isActive, password } = req.body;
+      const { name, email, role, isActive, password } =
+        adminUserUpdateSchema.parse(req.body);
 
-      if (role !== undefined && !ALLOWED_ROLES.includes(role)) {
-        return res.status(400).json({
-          success: false,
-          error: { message: "نقش انتخاب‌شده معتبر نیست" },
-        });
-      }
-
-      interface AdminUserUpdate {
+      const dataToUpdate: {
         name?: string;
         email?: string;
         role?: string;
         isActive?: boolean;
         passwordHash?: string;
-      }
-
-      const dataToUpdate: AdminUserUpdate = { name, email, role, isActive };
+      } = { name, email, role, isActive };
 
       if (password && password.trim() !== "") {
         dataToUpdate.passwordHash = await bcrypt.hash(password, 10);
@@ -145,6 +157,13 @@ export class AuthAdminController {
 
       res.json({ success: true, data: user });
     } catch (error: unknown) {
+      if (error instanceof ZodError) return validationError(res, error);
+      if (isUniqueViolation(error)) {
+        return res.status(400).json({
+          success: false,
+          error: { message: "این ایمیل قبلاً برای کاربر دیگری ثبت شده است" },
+        });
+      }
       const message = error instanceof Error ? error.message : "خطای ناشناخته";
       res.status(500).json({ success: false, error: { message } });
     }
@@ -205,15 +224,13 @@ export class AuthAdminController {
           .status(401)
           .json({ success: false, error: { message: "دسترسی غیرمجاز" } });
 
-      const { name, email, password } = req.body;
+      const { name, email, password } = profileUpdateSchema.parse(req.body);
 
-      interface UpdateProfile {
+      const data: {
         name?: string;
         email?: string;
         passwordHash?: string;
-      }
-
-      const data: UpdateProfile = { name, email };
+      } = { name, email };
 
       if (password && password.trim() !== "") {
         data.passwordHash = await bcrypt.hash(password, 10);
@@ -227,6 +244,13 @@ export class AuthAdminController {
 
       res.json({ success: true, data: user });
     } catch (error: unknown) {
+      if (error instanceof ZodError) return validationError(res, error);
+      if (isUniqueViolation(error)) {
+        return res.status(400).json({
+          success: false,
+          error: { message: "این ایمیل قبلاً برای کاربر دیگری ثبت شده است" },
+        });
+      }
       const message = error instanceof Error ? error.message : "خطا در ویرایش";
       res.status(500).json({ success: false, error: { message } });
     }

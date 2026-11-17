@@ -24,7 +24,7 @@ export class NetworkService {
   }
 
   async getAgencyBySlug(slug: string) {
-    return prisma.agency.findUnique({
+    return prisma.agency.findFirst({
       where: { slug, status: "published" },
     });
   }

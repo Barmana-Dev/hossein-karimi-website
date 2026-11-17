@@ -1,7 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProfileController = void 0;
+const zod_1 = require("zod");
 const profile_service_1 = require("./profile.service");
+const validators_1 = require("../../validators");
 const profileService = new profile_service_1.ProfileService();
 class ProfileController {
     // ۱. دریافت تنظیمات (ادمین)
@@ -18,10 +20,21 @@ class ProfileController {
     // ۲. به‌روزرسانی تنظیمات (ادمین)
     async update(req, res) {
         try {
-            const data = await profileService.updateSettings(req.body);
+            const validated = validators_1.settingsUpdateSchema.parse(req.body);
+            const data = await profileService.updateSettings(validated);
             res.json({ success: true, data, message: "تنظیمات با موفقیت ذخیره شد." });
         }
         catch (error) {
+            if (error instanceof zod_1.ZodError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: "VALIDATION_ERROR",
+                        message: "اطلاعات ارسالی معتبر نیست.",
+                        fields: error.flatten().fieldErrors,
+                    },
+                });
+            }
             const message = error instanceof Error ? error.message : "خطا در ذخیره تنظیمات";
             res.status(500).json({ success: false, error: { message } });
         }

@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import { AuthService } from "./auth.service";
+import { AuthError, AuthService } from "./auth.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
 import { prisma } from "../../config/prisma";
+import { config } from "../../config/env";
 
 const authService = new AuthService();
 
@@ -22,8 +23,9 @@ export class AuthController {
       // تنظیم کوکی امن (HttpOnly)
       res.cookie("token", result.token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: config.cookieSecure,
         sameSite: "strict",
+        path: "/",
         maxAge: 24 * 60 * 60 * 1000, // ۱ روز
       });
 
@@ -33,9 +35,28 @@ export class AuthController {
         message: "ورود موفقیت‌آمیز بود",
       });
     } catch (error: unknown) {
-      // بررسی اینکه آیا خطا یک Error است یا نه
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
-      res.status(400).json({ success: false, error: { message } });
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "اطلاعات ورود معتبر نیست.",
+            fields: error.flatten().fieldErrors,
+          },
+        });
+      }
+
+      if (error instanceof AuthError) {
+        return res
+          .status(error.status)
+          .json({ success: false, error: { message: error.message } });
+      }
+
+      console.error("🔴 Login error:", error);
+      res.status(500).json({
+        success: false,
+        error: { message: "خطای داخلی سرور رخ داده است." },
+      });
     }
   }
 

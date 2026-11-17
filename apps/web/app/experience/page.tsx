@@ -67,7 +67,7 @@ export default function ExperiencePage() {
   return (
     <div className="pt-[120px] pb-24 bg-background min-h-screen">
       <Container>
-        <SectionHead kicker="مسیر حرفه‌ای" title="سوابق و دستاوردها" />
+        <SectionHead as="h1" kicker="مسیر حرفه‌ای" title="سوابق و دستاوردها" />
 
         {isLoading ? (
           <div className="flex justify-center py-20">
@@ -100,9 +100,9 @@ export default function ExperiencePage() {
                           </span>
                         )}
                       </div>
-                      <h3 className="text-lg font-bold text-primary mb-2 group-hover:text-accent transition-colors">
+                      <h2 className="text-lg font-bold text-primary mb-2 group-hover:text-accent transition-colors">
                         {exp.title}
-                      </h3>
+                      </h2>
                       <div className="flex items-center gap-1.5 text-xs text-foreground-muted">
                         <Building2 size={14} className="text-accent" />{" "}
                         {exp.organization}

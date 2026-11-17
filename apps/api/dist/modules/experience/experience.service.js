@@ -30,13 +30,31 @@ class ExperienceService {
         return prisma_1.prisma.experience.findUnique({ where: { id } });
     }
     async updateExperience(id, data) {
+        const updateData = {};
+        if (data.slug !== undefined)
+            updateData.slug = data.slug;
+        if (data.title !== undefined)
+            updateData.title = data.title;
+        if (data.organization !== undefined)
+            updateData.organization = data.organization;
+        if (data.category !== undefined)
+            updateData.category = data.category;
+        if (data.role !== undefined)
+            updateData.role = data.role;
+        if (data.description !== undefined)
+            updateData.description = data.description;
+        if (data.status !== undefined)
+            updateData.status = data.status;
+        // 👇 تاریخ‌ها فقط اگه ارسال شده باشن
+        if (data.startDate !== undefined) {
+            updateData.startDate = data.startDate ? new Date(data.startDate) : null;
+        }
+        if (data.endDate !== undefined) {
+            updateData.endDate = data.endDate ? new Date(data.endDate) : null;
+        }
         return prisma_1.prisma.experience.update({
             where: { id },
-            data: {
-                ...data,
-                startDate: data.startDate ? new Date(data.startDate) : null,
-                endDate: data.endDate ? new Date(data.endDate) : null,
-            },
+            data: updateData,
         });
     }
     async deleteExperience(id) {

@@ -1,5 +1,10 @@
 import { Button } from "@/components/ui/Button";
 import { assetUrl } from "@/lib/api";
+import {
+  SITE_NAME,
+  SITE_SUBTITLE,
+  SITE_FALLBACK_BIO,
+} from "@/lib/constants";
 import { Award, ShieldCheck, Scale } from "lucide-react";
 
 interface HeroProps {
@@ -12,6 +17,11 @@ interface HeroProps {
 }
 
 export function Hero({ settings }: HeroProps) {
+  // 👇 اگر API در دسترس نباشد، صفحه بدون تیتر نمی‌ماند
+  const siteTitle = settings?.siteTitle || SITE_NAME;
+  const subtitle = settings?.subtitle || SITE_SUBTITLE;
+  const biography = settings?.biographyShort || SITE_FALLBACK_BIO;
+
   return (
     <section className="relative min-h-screen flex items-center pt-[140px] pb-[100px] bg-primary overflow-hidden isolate">
       {/* ====== پس‌زمینه ====== */}
@@ -37,16 +47,16 @@ export function Hero({ settings }: HeroProps) {
         <div className="text-center lg:text-right">
           <h1 className="text-[clamp(35px,5vw,55px)] font-black text-white leading-[1.15] tracking-[-0.02em] mb-2">
             <span className="relative inline-block">
-              {settings?.siteTitle}
+              {siteTitle}
               <span className="absolute bottom-2 right-0 left-0 h-3.5 bg-gradient-to-l from-accent/35 to-transparent -z-10 rounded" />
             </span>
             <span className="block text-[clamp(20px,2.4vw,25px)] font-medium text-accent-light mt-[18px] leading-[1.5]">
-              {settings?.subtitle}
+              {subtitle}
             </span>
           </h1>
 
           <p className="text-[16.5px] text-white/70 max-w-[520px] mx-auto lg:mx-0 my-8 leading-[2]">
-            {settings?.biographyShort}
+            {biography}
           </p>
 
           <div className="flex gap-3.5 flex-wrap justify-center lg:justify-start mb-10">
@@ -86,7 +96,7 @@ export function Hero({ settings }: HeroProps) {
 
             {settings?.portraitImage ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <img fetchPriority="high" decoding="async"
                 src={assetUrl(settings.portraitImage)}
                 alt="پرتره رسمی"
                 className="absolute inset-0 w-full h-full object-cover z-[2]"

@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { MapPin, Building2, Link as LinkIcon, ShieldCheck } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
-import { API_URL, assetUrl } from "@/lib/api";
+import { API_URL, assetUrl, fetchDetail, safeExternalUrl } from "@/lib/api";
+import { DataErrorState } from "@/components/ui/DataErrorState";
 
 // export const instant = false;
 
@@ -21,17 +22,8 @@ interface Agency {
   logoImage: string | null;
 }
 
-async function getAgency(slug: string): Promise<Agency | null> {
-  try {
-    const res = await fetch(`${API_URL}/public/network/${slug}`, {
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.data;
-  } catch {
-    return null;
-  }
+function getAgency(slug: string) {
+  return fetchDetail<Agency>(`${API_URL}/public/network/${slug}`);
 }
 
 export async function generateMetadata({
@@ -40,8 +32,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const agency = await getAgency(slug);
-  return { title: agency?.name || "مجموعه مرتبط" };
+  const result = await getAgency(slug);
+  return { title: result.status === "ok" ? result.data.name : "مجموعه مرتبط" };
 }
 
 export default async function AgencyDetailPage({
@@ -50,9 +42,13 @@ export default async function AgencyDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const agency = await getAgency(slug);
+  const result = await getAgency(slug);
 
-  if (!agency) notFound();
+  // 👇 فقط پاسخ ۴۰۴ صفحهٔ «پیدا نشد» می‌گیرد؛ خطای سرور پیام موقت دارد
+  if (result.status === "error") return <DataErrorState />;
+  if (result.status === "notfound") notFound();
+
+  const agency = result.data;
 
   return (
     <div className="bg-background min-h-screen pb-24">
@@ -80,7 +76,7 @@ export default async function AgencyDetailPage({
             <div className="w-24 h-24 rounded-2xl bg-white/5 text-white flex items-center justify-center font-black text-4xl border border-white/10 shrink-0 overflow-hidden">
               {agency.logoImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <img loading="lazy" decoding="async"
                   src={assetUrl(agency.logoImage)}
                   alt={agency.name}
                   className="w-full h-full object-cover"
@@ -164,10 +160,10 @@ export default async function AgencyDetailPage({
                 )}
               </ul>
 
-              {agency.websiteUrl && (
+              {safeExternalUrl(agency.websiteUrl) && (
                 <div className="mt-8 pt-6 border-t border-border">
                   <a
-                    href={agency.websiteUrl}
+                    href={safeExternalUrl(agency.websiteUrl) ?? undefined}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 w-full py-3 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary-light transition-colors"

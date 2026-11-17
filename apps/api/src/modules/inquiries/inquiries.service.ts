@@ -47,7 +47,10 @@ export class InquiriesService {
 
   async updateInquiry(
     id: string,
-    data: { status?: string; internalNote?: string },
+    data: {
+      status?: "new" | "in_review" | "contacted" | "closed";
+      internalNote?: string | null;
+    },
   ) {
     return prisma.inquiry.update({
       where: { id },

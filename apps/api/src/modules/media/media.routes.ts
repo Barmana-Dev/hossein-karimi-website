@@ -4,6 +4,7 @@ import { MediaController } from "./media.controller";
 import { MediaItemController } from "./media-item.controller";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware";
 import { AuthRequest } from "../../middleware/auth.middleware";
+import { config } from "../../config/env";
 
 const router = Router();
 const uploadController = new MediaController();
@@ -18,7 +19,7 @@ const EXTENSION_BY_MIME: Record<string, string> = {
 };
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
+  destination: (req, file, cb) => cb(null, config.uploadsDir),
   filename: (req, file, cb) =>
     cb(
       null,

@@ -68,7 +68,7 @@ export default function ExpertiseIndexPage() {
   return (
     <div className="pt-[120px] pb-24 bg-background min-h-screen">
       <Container>
-        <SectionHead kicker="حوزه‌های تخصصی" title="زمینه‌های فعالیت حرفه‌ای" />
+        <SectionHead as="h1" kicker="حوزه‌های تخصصی" title="زمینه‌های فعالیت حرفه‌ای" />
 
         {isLoading ? (
           <div className="flex justify-center py-20">
@@ -96,9 +96,9 @@ export default function ExpertiseIndexPage() {
                         <Icon size={24} strokeWidth={1.5} />
                       </div>
                       {/* 👇 تیتر کوچیک‌تر */}
-                      <h3 className="text-xl font-bold text-primary mb-3 group-hover:text-accent transition-colors">
+                      <h2 className="text-xl font-bold text-primary mb-3 group-hover:text-accent transition-colors">
                         {item.title}
-                      </h3>
+                      </h2>
                       {/* 👇 متن کوچیک‌تر */}
                       <p className="text-sm text-foreground-muted leading-[1.9] mb-6 flex-1">
                         {item.summary}

@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Mail, Phone, MapPin, SendHorizontal, Loader2 } from "lucide-react";
+import { Mail, Phone, MapPin, SendHorizontal } from "lucide-react";
 import { API_URL } from "@/lib/api";
+import { SITE_NAME, SITE_SUBTITLE } from "@/lib/constants";
 import logo from "../../../../public/images/logo.webp";
 import Image from "next/image";
 
@@ -50,35 +51,32 @@ interface Settings {
 
 export function Footer() {
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchSettings = async () => {
       try {
         const res = await fetch(`${API_URL}/public/settings`);
-        if (res.ok) {
+        if (res.ok && isMounted) {
           const json = await res.json();
           setSettings(json.data);
         }
-      } catch (error) {
-        console.error("Error fetching settings for footer:", error);
-      } finally {
-        setIsLoading(false);
+      } catch {
+        // 👇 اگر API در دسترس نباشد، فوتر با عنوان و لینک‌های ثابت نمایش داده می‌شود
       }
     };
     fetchSettings();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  if (isLoading) {
-    return (
-      <footer className="relative bg-primary text-white/70 overflow-hidden isolate">
-        <div className="absolute inset-0 -z-20 bg-hero-gradient opacity-95" />
-        <div className="relative z-10 max-w-[1220px] mx-auto px-6 md:px-7 py-8 flex items-center justify-center h-64">
-          <Loader2 className="animate-spin text-accent" size={32} />
-        </div>
-      </footer>
-    );
-  }
+  // 👇 عنوان و شعار پیش‌فرض تا فوتر هرگز خالی نماند
+  const siteTitle = settings?.siteTitle || SITE_NAME;
+  const subtitle = settings?.subtitle || SITE_SUBTITLE;
+  const hasContact = Boolean(
+    settings?.phone || settings?.contactEmail || settings?.address,
+  );
 
   return (
     <footer className="relative bg-primary text-white/70 overflow-hidden isolate">
@@ -116,16 +114,12 @@ export function Footer() {
               </div>
               <div>
                 {/* 👇 نام و شعار فقط اگر وجود داشته باشند */}
-                {settings?.siteTitle && (
-                  <strong className="block text-white text-[15px] font-extrabold leading-tight">
-                    {settings.siteTitle}
-                  </strong>
-                )}
-                {settings?.subtitle && (
-                  <span className="text-[10px] text-accent-light tracking-wider">
-                    {settings.subtitle}
-                  </span>
-                )}
+                <strong className="block text-white text-[15px] font-extrabold leading-tight">
+                  {siteTitle}
+                </strong>
+                <span className="text-[10px] text-accent-light tracking-wider">
+                  {subtitle}
+                </span>
               </div>
             </Link>
 
@@ -177,9 +171,9 @@ export function Footer() {
           {/* لینک‌ها */}
           {sections.map((section) => (
             <div key={section.title}>
-              <h4 className="text-white font-bold mb-3 text-sm">
+              <h3 className="text-white font-bold mb-3 text-sm">
                 {section.title}
-              </h4>
+              </h3>
               <ul className="space-y-2">
                 {section.links.map((link) => (
                   <li key={link.href}>
@@ -198,7 +192,7 @@ export function Footer() {
 
           {/* اطلاعات تماس */}
           <div>
-            <h4 className="text-white font-bold mb-3 text-sm">اطلاعات تماس</h4>
+            <h3 className="text-white font-bold mb-3 text-sm">اطلاعات تماس</h3>
             <ul className="space-y-3">
               {settings?.phone && (
                 <li className="flex items-center gap-2.5">
@@ -228,6 +222,11 @@ export function Footer() {
                   <span className="text-[13px] font-medium text-white/80 leading-relaxed">
                     {settings.address}
                   </span>
+                </li>
+              )}
+              {!hasContact && (
+                <li className="text-[13px] text-white/40">
+                  اطلاعات تماس پس از تکمیل در پنل مدیریت نمایش داده می‌شود.
                 </li>
               )}
             </ul>

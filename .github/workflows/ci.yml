@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  quality:
+    name: Lint, Typecheck, Build
+    runs-on: ubuntu-latest
+    env:
+      # فقط برای تولید کلاینت Prisma در CI لازم است؛ به دیتابیس واقعی وصل نمی‌شود
+      DATABASE_URL: "postgresql://user:password@localhost:5432/ci_db?schema=public"
+      NEXT_PUBLIC_API_URL: "http://localhost:4000/api/v1"
+      NEXT_PUBLIC_SITE_URL: "https://example.com"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # نسخهٔ ۲۴ برای اجرای فایل‌های تست TypeScript بدون مرحلهٔ build لازم است
+          node-version: "24"
+          cache: "npm"
+
+      - name: نصب وابستگی‌ها (فرانت‌اند)
+        run: npm ci
+
+      - name: نصب وابستگی‌ها (API)
+        run: npm ci --prefix apps/api
+
+      - name: تولید کلاینت Prisma
+        run: npx prisma generate
+        working-directory: apps/api
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build (Next.js)
+        run: npm run build
+
+      - name: Build (API)
+        run: npm run build:api

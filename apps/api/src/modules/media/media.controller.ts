@@ -3,11 +3,6 @@ import { AuthRequest } from "../../middleware/auth.middleware";
 import { prisma } from "../../config/prisma";
 import path from "path";
 import fs from "fs";
-import { MediaItemService } from "./media.service";
-import { mediaCreateSchema, mediaUpdateSchema } from "../../validators";
-import { ZodError } from "zod";
-
-const mediaService = new MediaItemService();
 
 // ===== بررسی محتوای واقعی فایل (امضای بایت‌های ابتدایی) =====
 interface DetectedImage {
@@ -130,96 +125,6 @@ export class MediaController {
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "خطا در حذف فایل";
-      res.status(500).json({ success: false, error: { message } });
-    }
-  }
-}
-
-// ===== MediaItemController (CRUD رسانه‌ها) =====
-export class MediaItemController {
-  async getAll(req: AuthRequest, res: Response) {
-    try {
-      const data = await mediaService.getPublishedMedia();
-      res.json({ success: true, data });
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
-      res.status(500).json({ success: false, error: { message } });
-    }
-  }
-
-  async adminGetAll(req: AuthRequest, res: Response) {
-    try {
-      const data = await mediaService.getAllMediaForAdmin();
-      res.json({ success: true, data });
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
-      res.status(500).json({ success: false, error: { message } });
-    }
-  }
-
-  async adminCreate(req: AuthRequest, res: Response) {
-    try {
-      const validated = mediaCreateSchema.parse(req.body);
-      const data = await mediaService.createMedia(validated);
-      res.status(201).json({ success: true, data });
-    } catch (error: unknown) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            code: "VALIDATION_ERROR",
-            fields: error.flatten().fieldErrors,
-          },
-        });
-      }
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
-      res.status(500).json({ success: false, error: { message } });
-    }
-  }
-
-  async adminGetById(req: AuthRequest, res: Response) {
-    try {
-      const data = await mediaService.getMediaById(req.params.id as string);
-      if (!data)
-        return res
-          .status(404)
-          .json({ success: false, error: { message: "یافت نشد" } });
-      res.json({ success: true, data });
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
-      res.status(500).json({ success: false, error: { message } });
-    }
-  }
-
-  async adminUpdate(req: AuthRequest, res: Response) {
-    try {
-      const validated = mediaUpdateSchema.parse(req.body);
-      const data = await mediaService.updateMedia(
-        req.params.id as string,
-        validated,
-      );
-      res.json({ success: true, data });
-    } catch (error: unknown) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            code: "VALIDATION_ERROR",
-            fields: error.flatten().fieldErrors,
-          },
-        });
-      }
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
-      res.status(500).json({ success: false, error: { message } });
-    }
-  }
-
-  async adminDelete(req: AuthRequest, res: Response) {
-    try {
-      await mediaService.deleteMedia(req.params.id as string);
-      res.json({ success: true });
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
       res.status(500).json({ success: false, error: { message } });
     }
   }

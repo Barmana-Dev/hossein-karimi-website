@@ -82,7 +82,6 @@ export default function EditArticlePage() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    console.log("📤 Sending formData:", formData);
     try {
       const res = await fetch(`${API_URL}/public/articles/admin/${id}`, {
         method: "PATCH",
@@ -235,7 +234,7 @@ export default function EditArticlePage() {
             {formData.coverImage ? (
               <div className="relative aspect-video rounded-xl overflow-hidden border border-border group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <img loading="lazy" decoding="async"
                   src={assetUrl(formData.coverImage)}
                   alt="Cover"
                   className="w-full h-full object-cover"

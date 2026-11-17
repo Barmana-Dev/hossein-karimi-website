@@ -18,7 +18,7 @@ export class ExpertiseService {
   }
 
   async getExpertiseBySlug(slug: string) {
-    return prisma.expertise.findUnique({
+    return prisma.expertise.findFirst({
       where: { slug, status: "published" },
     });
   }

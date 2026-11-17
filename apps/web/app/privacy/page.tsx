@@ -26,6 +26,7 @@ export default async function PrivacyPage() {
       <Container className="max-w-[800px]">
         {/* 👇 عنوان و توضیحات داینامیک (از seoTitle و seoDescription) */}
         <SectionHead
+          as="h1"
           kicker="قوانین و مقررات"
           title={settings?.seoTitle || "سیاست حریم خصوصی"}
           description={settings?.seoDescription || ""}

@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ExperienceController = void 0;
 const experience_service_1 = require("./experience.service");
 const client_1 = require("../../generated/prisma/client");
+const validators_1 = require("../../validators");
+const zod_1 = require("zod");
 const experienceService = new experience_service_1.ExperienceService();
 class ExperienceController {
     async getAll(req, res) {
@@ -28,7 +30,7 @@ class ExperienceController {
                     .json({ success: false, error: { message: "یافت نشد" } });
             res.json({ success: true, data: exp });
         }
-        catch (error) {
+        catch {
             res.status(500).json({ success: false, error: { message: "خطا" } });
         }
     }
@@ -39,18 +41,28 @@ class ExperienceController {
                 data: await experienceService.getAllExperiencesForAdmin(),
             });
         }
-        catch (error) {
+        catch {
             res.status(500).json({ success: false, error: { message: "خطا" } });
         }
     }
     async adminCreate(req, res) {
         try {
+            const validated = validators_1.experienceCreateSchema.parse(req.body);
             res.status(201).json({
                 success: true,
-                data: await experienceService.createExperience(req.body),
+                data: await experienceService.createExperience(validated),
             });
         }
         catch (error) {
+            if (error instanceof zod_1.ZodError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: "VALIDATION_ERROR",
+                        fields: error.flatten().fieldErrors,
+                    },
+                });
+            }
             if (error instanceof client_1.Prisma.PrismaClientKnownRequestError &&
                 error.code === "P2002")
                 return res
@@ -68,18 +80,28 @@ class ExperienceController {
                     .json({ success: false, error: { message: "یافت نشد" } });
             res.json({ success: true, data: exp });
         }
-        catch (error) {
+        catch {
             res.status(500).json({ success: false, error: { message: "خطا" } });
         }
     }
     async adminUpdate(req, res) {
         try {
+            const validated = validators_1.experienceUpdateSchema.parse(req.body);
             res.json({
                 success: true,
-                data: await experienceService.updateExperience(req.params.id, req.body),
+                data: await experienceService.updateExperience(req.params.id, validated),
             });
         }
         catch (error) {
+            if (error instanceof zod_1.ZodError) {
+                return res.status(400).json({
+                    success: false,
+                    error: {
+                        code: "VALIDATION_ERROR",
+                        fields: error.flatten().fieldErrors,
+                    },
+                });
+            }
             if (error instanceof client_1.Prisma.PrismaClientKnownRequestError &&
                 error.code === "P2002")
                 return res
@@ -93,7 +115,7 @@ class ExperienceController {
             await experienceService.deleteExperience(req.params.id);
             res.json({ success: true });
         }
-        catch (error) {
+        catch {
             res.status(500).json({ success: false, error: { message: "خطا" } });
         }
     }

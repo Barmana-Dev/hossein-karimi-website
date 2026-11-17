@@ -142,7 +142,7 @@ export default function InsightsPage() {
                   >
                     {article.coverImage ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={assetUrl(article.coverImage)}
                         alt={article.title}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -163,9 +163,9 @@ export default function InsightsPage() {
                       href={`/insights/${article.slug}`}
                       className="block group-hover:-translate-y-1 transition-transform duration-300"
                     >
-                      <h3 className="text-lg font-bold text-primary leading-[1.6] mb-4 line-clamp-2 transition-colors group-hover:text-accent">
+                      <h2 className="text-lg font-bold text-primary leading-[1.6] mb-4 line-clamp-2 transition-colors group-hover:text-accent">
                         {article.title}
-                      </h3>
+                      </h2>
                       <p className="text-sm text-foreground-muted leading-relaxed mb-6 line-clamp-2">
                         {article.excerpt}
                       </p>

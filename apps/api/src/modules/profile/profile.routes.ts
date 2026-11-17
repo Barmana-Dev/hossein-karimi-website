@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express";
+import { Router } from "express";
 import { ProfileController } from "./profile.controller";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware";
 import { AuthRequest } from "../../middleware/auth.middleware";
@@ -6,12 +6,7 @@ import { AuthRequest } from "../../middleware/auth.middleware";
 const router = Router();
 const controller = new ProfileController();
 
-// مسیر عمومی (بدون لاگین)
-router.get("/public", (req: Request, res: Response) =>
-  controller.getPublicSettings(req, res),
-);
-
-// مسیرهای مدیریتی (با لاگین)
+// مسیرهای مدیریتی (با لاگین) — تنظیمات عمومی در /api/v1/public/settings سرو می‌شود
 router.get(
   "/",
   requireAuth,

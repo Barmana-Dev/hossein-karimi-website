@@ -6,20 +6,20 @@ export interface UpdateSettingsDTO {
   biographyShort?: string;
   contactEmail?: string;
   phone?: string;
-  address?: string;
-  instagramUrl?: string;
-  linkedinUrl?: string;
-  telegramUrl?: string;
-  seoTitle?: string;
-  seoDescription?: string;
-  portraitImage?: string;
-  aboutContent?: string;
-  keyField?: string;
-  keyDegree?: string;
-  keyLanguages?: string;
-  contactContent?: string;
-  termsContent?: string;
-  privacyContent?: string;
+  address?: string | null;
+  instagramUrl?: string | null;
+  linkedinUrl?: string | null;
+  telegramUrl?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  portraitImage?: string | null;
+  aboutContent?: string | null;
+  keyField?: string | null;
+  keyDegree?: string | null;
+  keyLanguages?: string | null;
+  contactContent?: string | null;
+  termsContent?: string | null;
+  privacyContent?: string | null;
 }
 
 export class ProfileService {

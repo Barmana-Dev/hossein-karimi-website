@@ -59,8 +59,8 @@ export function Header() {
             subtitle: json.data.subtitle,
           });
         }
-      } catch (error) {
-        console.error("Error fetching site settings", error);
+      } catch {
+        // 👇 اگر API در دسترس نباشد، عنوان و زیرعنوان پیش‌فرض سایت نمایش داده می‌شود
       }
     };
     fetchSettings();

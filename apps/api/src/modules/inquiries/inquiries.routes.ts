@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 import { InquiriesController } from "./inquiries.controller";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware";
 import { AuthRequest } from "../../middleware/auth.middleware";
+import { config } from "../../config/env";
 
 const router = Router();
 const controller = new InquiriesController();
@@ -12,7 +13,7 @@ const inquiriesController = new InquiriesController();
 // فقط روی همین endpoint عمومی اعمال می‌شود تا مسیر دیگری بدون محدودیت نماند.
 const inquiryLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === "production" ? 5 : 100,
+  max: config.inquiryRateLimitMax,
   message: {
     success: false,
     error: {

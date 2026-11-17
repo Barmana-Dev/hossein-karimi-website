@@ -10,7 +10,7 @@ class ExpertiseService {
         });
     }
     async getExpertiseBySlug(slug) {
-        return prisma_1.prisma.expertise.findUnique({
+        return prisma_1.prisma.expertise.findFirst({
             where: { slug, status: "published" },
         });
     }
