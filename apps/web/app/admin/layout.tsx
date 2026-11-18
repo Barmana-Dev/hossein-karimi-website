@@ -115,6 +115,7 @@ export default function AdminLayout({
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -144,6 +145,11 @@ export default function AdminLayout({
           const userData = await userRes.json();
           if (isMounted) setUser(userData.data);
         } else {
+          // 👇 کوکی نامعتبر را پاک می‌کنیم تا صفحهٔ لاگین در حلقهٔ ریدایرکت نیفتد
+          await fetch(`${API_URL}/auth/logout`, {
+            method: "POST",
+            credentials: "include",
+          }).catch(() => undefined);
           router.push("/login");
         }
       } catch {
@@ -199,6 +205,38 @@ export default function AdminLayout({
       clearInterval(interval);
     };
   }, []);
+
+  // 👇 تشخیص دسکتاپ برای اینکه سایدبار بستهٔ موبایل از ترتیب فوکوس خارج شود
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktop(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener("change", update);
+    return () => mediaQuery.removeEventListener("change", update);
+  }, []);
+
+  // 👇 بستن خودکار سایدبار موبایل پس از تغییر مسیر (با تغییر state در رندر،
+  // نه در effect؛ این الگوی رسمی React برای واکنش به تغییر prop است)
+  const [previousPathname, setPreviousPathname] = useState(pathname);
+  if (pathname !== previousPathname) {
+    setPreviousPathname(pathname);
+    if (isMobileOpen) setIsMobileOpen(false);
+  }
+
+  // 👇 قفل اسکرول و بستن با Escape وقتی سایدبار موبایل باز است
+  useEffect(() => {
+    if (!isMobileOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsMobileOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMobileOpen]);
 
   // ۴. بستن منوها با کلیک بیرون
   useEffect(() => {
@@ -295,6 +333,9 @@ export default function AdminLayout({
       <div className="min-h-screen bg-[#F4F7F9] flex" dir="rtl">
         {/* ====== SIDEBAR ====== */}
         <aside
+          // 👇 در موبایلِ بسته، لینک‌های سایدبار نباید فوکوس کیبورد بگیرند
+          inert={!isDesktop && !isMobileOpen}
+          aria-hidden={!isDesktop && !isMobileOpen}
           className={cn(
             "fixed inset-y-0 right-0 z-50 bg-[#1E293B] text-white transition-all duration-300 flex flex-col shadow-2xl",
             isCollapsed ? "w-[80px]" : "w-[240px]",
@@ -306,6 +347,8 @@ export default function AdminLayout({
           <div className="h-20 flex items-center justify-between px-4 border-b border-white/10 relative">
             <Link
               href="/"
+              aria-label="بازگشت به سایت"
+              onClick={() => setIsMobileOpen(false)}
               className={cn(
                 "flex items-center gap-3 overflow-hidden hover:opacity-80 transition-opacity",
                 isCollapsed && "justify-center w-full",
@@ -333,6 +376,7 @@ export default function AdminLayout({
             </Link>
             <button
               onClick={() => setIsMobileOpen(false)}
+              aria-label="بستن منوی مدیریت"
               className="lg:hidden text-white/50 hover:text-white absolute left-4"
             >
               <X size={20} />
@@ -350,6 +394,7 @@ export default function AdminLayout({
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => setIsMobileOpen(false)}
                   className={cn(
                     "flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all group",
                     isActive
@@ -378,6 +423,7 @@ export default function AdminLayout({
 
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
+            aria-label={isCollapsed ? "باز کردن سایدبار" : "جمع کردن سایدبار"}
             className="hidden lg:flex absolute top-24 -left-4 w-8 h-8 bg-[#1E293B] border border-white/20 rounded-full items-center justify-center text-white/70 hover:text-white hover:bg-accent transition-colors z-50 shadow-md"
           >
             {isCollapsed ? (
@@ -400,6 +446,7 @@ export default function AdminLayout({
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setIsMobileOpen(true)}
+                aria-label="باز کردن منوی مدیریت"
                 className="lg:hidden text-primary"
               >
                 <svg
@@ -429,6 +476,7 @@ export default function AdminLayout({
                 <input
                   type="text"
                   placeholder="جستجوی سراسری..."
+                  aria-label="جستجوی سراسری"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-background border border-border rounded-xl py-2 pr-10 pl-4 text-sm focus:outline-none focus:border-accent"
@@ -512,6 +560,8 @@ export default function AdminLayout({
               <div className="relative" ref={notifRef}>
                 <button
                   onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                  aria-label="اعلان‌ها"
+                  aria-expanded={isNotificationsOpen}
                   className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground-muted hover:text-primary transition-colors relative"
                 >
                   <Bell size={18} />
@@ -521,7 +571,7 @@ export default function AdminLayout({
                 </button>
 
                 {isNotificationsOpen && (
-                  <div className="absolute left-0 top-12 w-[320px] bg-white border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
+                  <div className="absolute right-0 top-12 w-[320px] max-w-[calc(100vw-1.5rem)] bg-white border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
                     <div className="p-4 border-b border-border bg-background/50 flex justify-between items-center">
                       <h3 className="font-bold text-primary text-sm">
                         درخواست‌های جدید
@@ -572,6 +622,8 @@ export default function AdminLayout({
               <div className="relative" ref={profileRef}>
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  aria-label="منوی حساب کاربری"
+                  aria-expanded={isProfileOpen}
                   className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-full border border-border hover:bg-background transition-colors"
                 >
                   <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm">

@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InquiriesController = void 0;
+const error_message_1 = require("../../lib/error-message");
 const inquiries_service_1 = require("./inquiries.service");
 const zod_1 = require("zod");
 const prisma_1 = require("../../config/prisma");
@@ -52,7 +53,7 @@ class InquiriesController {
             });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطا";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطا");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -89,7 +90,7 @@ class InquiriesController {
                     },
                 });
             }
-            const message = error instanceof Error ? error.message : "خطا";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطا");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -108,7 +109,7 @@ class InquiriesController {
             res.json({ success: true, message: "درخواست با موفقیت حذف شد" });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }

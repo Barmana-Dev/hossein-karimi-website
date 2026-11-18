@@ -1,3 +1,4 @@
+import { publicErrorMessage } from "../../lib/error-message";
 import { Request, Response } from "express";
 import { ZodError } from "zod";
 import { MediaItemService } from "./media.service";
@@ -24,7 +25,7 @@ export class MediaItemController {
       const data = await mediaService.getPublishedMedia();
       res.json({ success: true, data });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
+      const message = publicErrorMessage(error, "خطای ناشناخته");
       res.status(500).json({ success: false, error: { message } });
     }
   }
@@ -55,7 +56,7 @@ export class MediaItemController {
           : undefined,
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
+      const message = publicErrorMessage(error, "خطای ناشناخته");
       res.status(500).json({ success: false, error: { message } });
     }
   }
@@ -69,7 +70,7 @@ export class MediaItemController {
       if (error instanceof ZodError) {
         return sendValidationError(res, error);
       }
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
+      const message = publicErrorMessage(error, "خطای ناشناخته");
       res.status(500).json({ success: false, error: { message } });
     }
   }
@@ -83,7 +84,7 @@ export class MediaItemController {
           .json({ success: false, error: { message: "یافت نشد" } });
       res.json({ success: true, data });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
+      const message = publicErrorMessage(error, "خطای ناشناخته");
       res.status(500).json({ success: false, error: { message } });
     }
   }
@@ -100,7 +101,7 @@ export class MediaItemController {
       if (error instanceof ZodError) {
         return sendValidationError(res, error);
       }
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
+      const message = publicErrorMessage(error, "خطای ناشناخته");
       res.status(500).json({ success: false, error: { message } });
     }
   }
@@ -110,7 +111,7 @@ export class MediaItemController {
       await mediaService.deleteMedia(req.params.id as string);
       res.json({ success: true });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
+      const message = publicErrorMessage(error, "خطای ناشناخته");
       res.status(500).json({ success: false, error: { message } });
     }
   }

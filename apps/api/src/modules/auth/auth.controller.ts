@@ -1,9 +1,12 @@
 import { Request, Response } from "express";
 import { z } from "zod";
+import jwt from "jsonwebtoken";
 import { AuthError, AuthService } from "./auth.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
 import { prisma } from "../../config/prisma";
 import { config } from "../../config/env";
+import { clearAuthCookie, setAuthCookie } from "../../lib/auth-cookie";
+import { publicErrorMessage } from "../../lib/error-message";
 
 const authService = new AuthService();
 
@@ -20,14 +23,8 @@ export class AuthController {
 
       const result = await authService.login(email, password);
 
-      // تنظیم کوکی امن (HttpOnly)
-      res.cookie("token", result.token, {
-        httpOnly: true,
-        secure: config.cookieSecure,
-        sameSite: "strict",
-        path: "/",
-        maxAge: 24 * 60 * 60 * 1000, // ۱ روز
-      });
+      // تنظیم کوکی امن (HttpOnly) — با domain مشترک در استقرار چندزیردامنه‌ای
+      setAuthCookie(res, result.token);
 
       res.json({
         success: true,
@@ -61,7 +58,26 @@ export class AuthController {
   }
 
   async logout(req: Request, res: Response) {
-    res.clearCookie("token");
+    // 👇 توکن فعلی را باطل می‌کنیم؛ پاک‌کردن کوکی به‌تنهایی توکن دزدیده‌شده را
+    // تا زمان انقضا معتبر باقی می‌گذاشت.
+    const token = req.cookies?.token;
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, config.jwtSecret) as {
+          userId?: string;
+        };
+        if (decoded.userId) {
+          await prisma.adminUser.update({
+            where: { id: decoded.userId },
+            data: { tokenVersion: { increment: 1 } },
+          });
+        }
+      } catch {
+        // توکن نامعتبر یا منقضی: فقط کوکی پاک می‌شود
+      }
+    }
+
+    clearAuthCookie(res);
     res.json({ success: true, message: "خروج انجام شد" });
   }
 
@@ -87,8 +103,12 @@ export class AuthController {
         },
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
-      res.status(500).json({ success: false, error: { message } });
+      res.status(500).json({
+        success: false,
+        error: {
+          message: publicErrorMessage(error, "خطای داخلی سرور رخ داده است."),
+        },
+      });
     }
   }
 }

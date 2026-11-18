@@ -15,6 +15,7 @@ import {
 import { Container } from "@/components/ui/Container";
 import { SectionHead } from "@/components/ui/SectionHead";
 import { toPersianNumber } from "@/lib/utils";
+import { LoadError } from "@/components/ui/LoadError";
 
 const iconMap: Record<string, LucideIcon> = {
   scale: Scale,
@@ -35,23 +36,38 @@ interface Expertise {
 export default function ExpertiseIndexPage() {
   const [expertises, setExpertises] = useState<Expertise[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchExpertises = async () => {
+      setIsLoading(true);
+      setLoadError(null);
       try {
         const res = await fetch(`${API_URL}/public/expertise`, {
           cache: "no-store",
         });
-        if (res.ok) setExpertises((await res.json()).data);
+        if (!res.ok) throw new Error("failed");
+        const json = await res.json();
+        if (isMounted) setExpertises(json.data ?? []);
       } catch (error) {
         console.error(error);
+        if (isMounted) {
+          setLoadError(
+            "دریافت حوزه‌ها از سرور انجام نشد. لطفاً دوباره تلاش کنید.",
+          );
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
     fetchExpertises();
-  }, []);
+    return () => {
+      isMounted = false;
+    };
+  }, [reloadKey]);
 
   const totalPages = Math.ceil(expertises.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -74,6 +90,11 @@ export default function ExpertiseIndexPage() {
           <div className="flex justify-center py-20">
             <Loader2 className="animate-spin text-accent" size={40} />
           </div>
+        ) : loadError ? (
+          <LoadError
+            message={loadError}
+            onRetry={() => setReloadKey((key) => key + 1)}
+          />
         ) : paginatedExpertises.length > 0 ? (
           <>
             {/* 👇 gap و max-w کمی کمتر */}
@@ -105,7 +126,7 @@ export default function ExpertiseIndexPage() {
                       </p>
                       <div className="mt-auto pt-5 border-t border-border flex items-center justify-between">
                         <Link
-                          href={`/expertise/${item.slug}`}
+                          href={`/expertise/${encodeURIComponent(item.slug)}`}
                           className="relative inline-flex items-center justify-center overflow-hidden px-5 py-2.5 rounded-lg text-[13px] font-bold bg-primary text-white transition-all duration-300 active:scale-95 group/btn w-full sm:w-auto"
                         >
                           <span className="absolute inset-0 bg-primary-light -translate-x-[120%] transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover/btn:translate-x-0 z-[1]" />
@@ -120,11 +141,11 @@ export default function ExpertiseIndexPage() {
               })}
             </div>
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 mt-12">
+              <div className="flex flex-wrap justify-center items-center gap-2 mt-12">
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 rounded-lg border border-border bg-white text-sm font-bold text-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background transition-colors"
+                  className="shrink-0 px-4 py-2 rounded-lg border border-border bg-white text-sm font-bold text-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background transition-colors"
                 >
                   قبلی
                 </button>
@@ -133,7 +154,9 @@ export default function ExpertiseIndexPage() {
                     <button
                       key={page}
                       onClick={() => handlePageChange(page)}
-                      className={`w-10 h-10 rounded-lg text-sm font-bold transition-colors ${currentPage === page ? "bg-primary text-white" : "bg-white border border-border text-primary hover:bg-background"}`}
+                      aria-label={`صفحهٔ ${toPersianNumber(page)}`}
+                      aria-current={currentPage === page ? "page" : undefined}
+                      className={`shrink-0 min-w-10 h-10 px-2 rounded-lg text-sm font-bold transition-colors ${currentPage === page ? "bg-primary text-white" : "bg-white border border-border text-primary hover:bg-background"}`}
                     >
                       {toPersianNumber(page)}
                     </button>
@@ -142,7 +165,7 @@ export default function ExpertiseIndexPage() {
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 rounded-lg border border-border bg-white text-sm font-bold text-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background transition-colors"
+                  className="shrink-0 px-4 py-2 rounded-lg border border-border bg-white text-sm font-bold text-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-background transition-colors"
                 >
                   بعدی
                 </button>

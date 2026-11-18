@@ -32,7 +32,11 @@ class AuthService {
         if (!isPasswordValid) {
             throw new AuthError("ایمیل یا رمز عبور اشتباه است", 401);
         }
-        const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role }, env_1.config.jwtSecret, { expiresIn: "1d" });
+        const token = jsonwebtoken_1.default.sign({
+            userId: user.id,
+            role: user.role,
+            tokenVersion: user.tokenVersion,
+        }, env_1.config.jwtSecret, { expiresIn: "1d" });
         return {
             token,
             user: {

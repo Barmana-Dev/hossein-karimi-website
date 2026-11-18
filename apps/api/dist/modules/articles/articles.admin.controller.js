@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ArticlesAdminController = void 0;
+const error_message_1 = require("../../lib/error-message");
 const articles_service_1 = require("./articles.service");
 const client_1 = require("../../generated/prisma/client");
 const validators_1 = require("../../validators");
@@ -28,7 +29,7 @@ class ArticlesAdminController {
             });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -57,7 +58,7 @@ class ArticlesAdminController {
                     });
                 }
             }
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -72,7 +73,7 @@ class ArticlesAdminController {
             res.json({ success: true, data: article });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -113,7 +114,7 @@ class ArticlesAdminController {
                     error: { message: "مقاله یافت نشد" },
                 });
             }
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -131,7 +132,7 @@ class ArticlesAdminController {
                     error: { message: "مقاله یافت نشد" },
                 });
             }
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }

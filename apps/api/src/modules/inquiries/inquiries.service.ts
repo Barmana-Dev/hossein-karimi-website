@@ -1,19 +1,37 @@
 import { prisma } from "../../config/prisma";
 import { z } from "zod";
 
+const phoneField = z
+  .string()
+  .trim()
+  .max(30, "شماره تماس بیش از حد طولانی است")
+  .optional()
+  .or(z.literal(""))
+  .refine((value) => !value || /^[+0-9()\-\s]{7,30}$/.test(value), {
+    message: "شماره تماس معتبر نیست",
+  });
+
 export const inquirySchema = z
   .object({
-    fullName: z.string().min(3, "نام و نام خانوادگی الزامی است"),
-    email: z.string().email("ایمیل نامعتبر است").optional().or(z.literal("")),
-    phone: z.string().optional().or(z.literal("")),
-    type: z.string().min(1, "نوع درخواست الزامی است"),
-    subject: z.string().min(3, "موضوع الزامی است"),
-    message: z.string().min(10, "توضیحات باید حداقل ۱۰ کاراکتر باشد"),
+    fullName: z.string().trim().min(3, "نام و نام خانوادگی الزامی است"),
+    email: z
+      .string()
+      .trim()
+      .email("ایمیل نامعتبر است")
+      .optional()
+      .or(z.literal("")),
+    phone: phoneField,
+    // 👇 فقط گزینه‌های واقعی فرم تماس پذیرفته می‌شوند
+    type: z.enum(["legal", "customs", "business", "media", "other"], {
+      message: "نوع درخواست معتبر نیست",
+    }),
+    subject: z.string().trim().min(3, "موضوع الزامی است"),
+    message: z.string().trim().min(10, "توضیحات باید حداقل ۱۰ کاراکتر باشد"),
     consent: z.literal(true, {
       message: "رضایت به پردازش داده‌ها الزامی است",
     }),
   })
-  .refine((data) => data.email || data.phone, {
+  .refine((data) => Boolean(data.email?.trim() || data.phone?.trim()), {
     message: "حداقل یکی از موارد ایمیل یا شماره تماس الزامی است",
     path: ["email"],
   });

@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DashboardController = void 0;
+const error_message_1 = require("../../lib/error-message");
 const dashboard_service_1 = require("./dashboard.service");
 const dashboardService = new dashboard_service_1.DashboardService();
 class DashboardController {
@@ -12,7 +13,7 @@ class DashboardController {
             res.json({ success: true, data });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطا";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطا");
             res.status(500).json({ success: false, error: { message } });
         }
     }

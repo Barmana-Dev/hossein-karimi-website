@@ -40,7 +40,14 @@ export default function EditAdminPage() {
           credentials: "include",
         });
         if (res.ok && isMounted) {
-          setFormData((await res.json()).data);
+          const data = (await res.json()).data;
+          setFormData({
+            name: data.name,
+            email: data.email,
+            role: data.role,
+            isActive: data.isActive,
+            password: "",
+          });
         } else {
           router.push("/admin/accounts");
         }
@@ -72,10 +79,19 @@ export default function EditAdminPage() {
     setIsLoading(true);
     setError(null);
     try {
+      // 👇 id و فیلدهای اضافی پاسخ GET نباید به PATCH بروند (strict schema)
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        role: formData.role,
+        isActive: formData.isActive,
+        ...(formData.password ? { password: formData.password } : {}),
+      };
+
       const res = await fetch(`${API_URL}/auth/admin/users/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
         credentials: "include",
       });
       const data = await res.json();
@@ -179,11 +195,13 @@ export default function EditAdminPage() {
             <label className="text-xs font-bold text-primary">نقش</label>
             <select
               name="role"
+              aria-label="نقش کاربر"
               value={formData.role}
               onChange={handleChange}
               className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:outline-none"
             >
               <option value="EDITOR">نویسنده (Editor)</option>
+              <option value="INQUIRY_MANAGER">مدیر درخواست‌ها</option>
               <option value="SUPER_ADMIN">مدیر ارشد (Super Admin)</option>
             </select>
           </div>

@@ -22,55 +22,53 @@ export interface UpdateSettingsDTO {
   privacyContent?: string | null;
 }
 
+// 👇 تنظیمات سایت تک‌نسخه‌ای است؛ شناسهٔ ثابت از ساخت رکوردهای هم‌زمان
+// و چندگانه جلوگیری می‌کند.
+const SETTINGS_ID = "site-settings";
+
+const DEFAULT_SETTINGS = {
+  id: SETTINGS_ID,
+  siteTitle: "دکتر حسین کریمی",
+  subtitle: "حقوق، امور گمرکی و تجارت",
+  biographyShort: "",
+  contactEmail: "info@example.com",
+  phone: "021-12345678",
+};
+
+function isUniqueViolation(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "P2002"
+  );
+}
+
 export class ProfileService {
   async getSettings() {
-    let settings = await prisma.siteSettings.findFirst();
-    if (!settings) {
-      settings = await prisma.siteSettings.create({
-        data: {
-          siteTitle: "دکتر حسین کریمی",
-          subtitle: "حقوق، امور گمرکی و تجارت",
-          biographyShort: "",
-          contactEmail: "info@example.com",
-          phone: "021-12345678",
-        },
-      });
+    const existing = await prisma.siteSettings.findFirst();
+    if (existing) return existing;
+
+    try {
+      return await prisma.siteSettings.create({ data: DEFAULT_SETTINGS });
+    } catch (error) {
+      // درخواست هم‌زمان دیگری رکورد را ساخته است
+      if (isUniqueViolation(error)) {
+        const created = await prisma.siteSettings.findFirst();
+        if (created) return created;
+      }
+      throw error;
     }
-    return settings;
   }
 
   async updateSettings(data: UpdateSettingsDTO) {
-    const current = await prisma.siteSettings.findFirst();
-    if (current) {
-      return prisma.siteSettings.update({
-        where: { id: current.id },
-        data: {
-          ...data,
-          portraitImage: data.portraitImage,
-          aboutContent: data.aboutContent,
-          contactContent: data.contactContent,
-          termsContent: data.termsContent,
-          privacyContent: data.privacyContent,
-          keyField: data.keyField,
-          keyDegree: data.keyDegree,
-          keyLanguages: data.keyLanguages,
-        },
-      });
-    }
-    return prisma.siteSettings.create({
-      data: {
-        siteTitle: data.siteTitle || "دکتر حسین کریمی",
-        subtitle: data.subtitle || "حقوق، امور گمرکی و تجارت",
-        biographyShort: data.biographyShort || "",
-        contactEmail: data.contactEmail || "info@example.com",
-        phone: data.phone || "021-12345678",
-        address: data.address,
-        instagramUrl: data.instagramUrl,
-        linkedinUrl: data.linkedinUrl,
-        telegramUrl: data.telegramUrl,
-        seoTitle: data.seoTitle,
-        seoDescription: data.seoDescription,
-      },
+    // 👇 رکورد را قبل از به‌روزرسانی تضمین می‌کنیم تا همهٔ فیلدها (حتی در
+    // اولین ذخیره) با یک مسیر یکسان نوشته شوند.
+    const current = await this.getSettings();
+
+    return prisma.siteSettings.update({
+      where: { id: current.id },
+      data,
     });
   }
 }

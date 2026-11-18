@@ -5,17 +5,14 @@ import type { NextRequest } from "next/server";
 export function proxy(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
-  const isLoginPage = request.nextUrl.pathname === "/login";
 
   // اگر به مسیر ادمین می‌رود و توکن ندارد -> برود به لاگین
   if (isAdminRoute && !token) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // اگر در صفحه لاگین است و توکن دارد -> برود به داشبورد
-  if (isLoginPage && token) {
-    return NextResponse.redirect(new URL("/admin", request.url));
-  }
+  // 👇 وجود کوکی به‌تنهایی یعنی نشست معتبر نیست؛ هدایت /login به /admin
+  // با کوکی خراب باعث حلقهٔ بی‌پایان می‌شد. اعتبار نشست در خود صفحه بررسی می‌شود.
 
   return NextResponse.next();
 }

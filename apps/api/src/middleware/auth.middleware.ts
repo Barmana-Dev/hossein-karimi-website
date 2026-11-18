@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../config/prisma";
+import { config } from "../config/env";
 
 export interface AuthRequest extends Request {
   user?: {
@@ -25,16 +26,32 @@ export const requireAuth = async (
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+    // 👇 همان کلیدی که توکن با آن امضا شده (شامل مقدار fallback توسعه)
+    const decoded = jwt.verify(token, config.jwtSecret) as {
       userId: string;
       role: string;
+      tokenVersion?: number;
     };
 
     // 👇 چک کن کاربر هنوز وجود داره و فعاله
     const user = await prisma.adminUser.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, isActive: true, role: true },
+      select: {
+        id: true,
+        isActive: true,
+        role: true,
+        tokenVersion: true,
+      },
     });
+
+    // 👇 توکن‌های قبل از تغییر رمز یا خروج باطل شده‌اند
+    const tokenVersion = decoded.tokenVersion ?? 0;
+    if (user && tokenVersion !== user.tokenVersion) {
+      return res.status(401).json({
+        success: false,
+        error: { message: "نشست شما منقضی شده است. دوباره وارد شوید." },
+      });
+    }
 
     if (!user || !user.isActive) {
       return res.status(401).json({

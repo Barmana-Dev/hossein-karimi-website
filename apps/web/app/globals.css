@@ -14,6 +14,8 @@
 
   --color-text: #17212c;
   --color-text-muted: #6b7684;
+  /* 👇 کلاس‌های text-foreground-muted در کامپوننت‌ها از این توکن استفاده می‌کنند */
+  --color-foreground-muted: #6b7684;
 
   --color-surface: #ffffff;
   --color-background: #f5f6f8;

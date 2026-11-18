@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { ProfileService } from "./profile.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
 import { settingsUpdateSchema } from "../../validators";
+import { publicErrorMessage } from "../../lib/error-message";
 
 const profileService = new ProfileService();
 
@@ -13,8 +14,7 @@ export class ProfileController {
       const data = await profileService.getSettings();
       res.json({ success: true, data });
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : "خطا در دریافت تنظیمات";
+      const message = publicErrorMessage(error, "خطا در دریافت تنظیمات");
       res.status(500).json({ success: false, error: { message } });
     }
   }
@@ -36,8 +36,7 @@ export class ProfileController {
           },
         });
       }
-      const message =
-        error instanceof Error ? error.message : "خطا در ذخیره تنظیمات";
+      const message = publicErrorMessage(error, "خطا در ذخیره تنظیمات");
       res.status(500).json({ success: false, error: { message } });
     }
   }
@@ -58,6 +57,8 @@ export class ProfileController {
           instagramUrl: data.instagramUrl,
           linkedinUrl: data.linkedinUrl,
           telegramUrl: data.telegramUrl,
+          seoTitle: data.seoTitle,
+          seoDescription: data.seoDescription,
           portraitImage: data.portraitImage,
           aboutContent: data.aboutContent,
           contactContent: data.contactContent,
@@ -69,7 +70,7 @@ export class ProfileController {
         },
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
+      const message = publicErrorMessage(error, "خطای ناشناخته");
       res.status(500).json({ success: false, error: { message } });
     }
   }

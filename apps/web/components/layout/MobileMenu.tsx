@@ -139,7 +139,12 @@ export function MobileMenu({
           ))}
         </nav>
         <div className="p-4 border-t border-border">
-          <Button href="/contact" variant="primary" className="w-full">
+          <Button
+            href="/contact"
+            variant="primary"
+            className="w-full"
+            onClick={onClose}
+          >
             درخواست ارتباط
           </Button>
         </div>

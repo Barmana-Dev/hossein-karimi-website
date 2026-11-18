@@ -4,14 +4,8 @@ import { notFound } from "next/navigation";
 import { API_URL, SITE_URL, assetUrl, fetchDetail } from "@/lib/api";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { sanitizeHtml } from "@/lib/sanitize-html";
-import {
-  ArrowRight,
-  Clock,
-  Calendar,
-  User,
-  Share2,
-  BookOpen,
-} from "lucide-react";
+import { ArrowRight, Clock, Calendar, User, BookOpen } from "lucide-react";
+import { ArticleShareButton } from "@/components/ArticleShareButton";
 import { Container } from "@/components/ui/Container";
 import { Badge } from "@/components/ui/Badge";
 import { DataErrorState } from "@/components/ui/DataErrorState";
@@ -28,6 +22,8 @@ interface Article {
   readTime: number;
   publishedAt: string;
   coverImage: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
 }
 
 interface RelatedArticle {
@@ -35,6 +31,42 @@ interface RelatedArticle {
   slug: string;
   title: string;
   category: string;
+}
+
+interface TocHeading {
+  id: string;
+  text: string;
+  level: number;
+}
+
+// 👇 فهرست مطالب از headingهای واقعی محتوا ساخته می‌شود و شناسهٔ لینک‌پذیر می‌گیرد
+function buildTableOfContents(html: string): {
+  html: string;
+  headings: TocHeading[];
+} {
+  const headings: TocHeading[] = [];
+  let index = 0;
+
+  const withIds = html.replace(
+    /<(h[23])([^>]*)>([\s\S]*?)<\/\1>/gi,
+    (match, tag: string, attrs: string, inner: string) => {
+      index += 1;
+      const id = `section-${index}`;
+      const text = inner.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      if (!text) return match;
+
+      headings.push({
+        id,
+        text,
+        level: tag.toLowerCase() === "h2" ? 2 : 3,
+      });
+
+      const cleanAttrs = attrs.replace(/\s+id=("[^"]*"|'[^']*')/gi, "");
+      return `<${tag}${cleanAttrs} id="${id}">${inner}</${tag}>`;
+    },
+  );
+
+  return { html: withIds, headings };
 }
 
 // 👇 بدون کش، تا تغییر تصویر شاخص بلافاصله بعد از ذخیره دیده شود
@@ -89,14 +121,17 @@ export async function generateMetadata({
     ? assetUrl(article.coverImage)
     : `${SITE_URL}/og-default.png`;
 
+  const metaTitle = article.metaTitle || article.title;
+  const metaDescription = article.metaDescription || article.excerpt;
+
   return {
-    title: article.title,
-    description: article.excerpt,
+    title: metaTitle,
+    description: metaDescription,
     alternates: { canonical: url },
     openGraph: {
       type: "article",
-      title: article.title,
-      description: article.excerpt,
+      title: metaTitle,
+      description: metaDescription,
       url,
       siteName: "حسین کریمی",
       locale: "fa_IR",
@@ -106,8 +141,8 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: article.title,
-      description: article.excerpt,
+      title: metaTitle,
+      description: metaDescription,
       images: [image],
     },
   };
@@ -130,6 +165,9 @@ export default async function ArticleDetailPage({
   if (articleResult.status === "notfound") notFound();
 
   const article = articleResult.data;
+  const { html: articleBody, headings } = buildTableOfContents(
+    sanitizeHtml(article.body),
+  );
 
   return (
     <div className="pt-[100px] pb-24 bg-background min-h-screen">
@@ -206,11 +244,7 @@ export default async function ArticleDetailPage({
               <p className="text-xl text-primary font-semibold mb-8 leading-[1.8]">
                 {article.excerpt}
               </p>
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: sanitizeHtml(article.body),
-                }}
-              />
+              <div dangerouslySetInnerHTML={{ __html: articleBody }} />
             </div>
 
             {/* Actions */}
@@ -219,47 +253,33 @@ export default async function ArticleDetailPage({
                 اشتراک‌گذاری:
               </span>
               <div className="flex gap-2">
-                <button className="w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center text-foreground-muted hover:bg-primary hover:text-white transition-colors">
-                  <Share2 size={16} />
-                </button>
+                <ArticleShareButton title={article.title} />
               </div>
             </div>
           </div>
 
           {/* Sidebar */}
           <aside className="space-y-8 sticky top-28">
-            <div className="bg-white border border-border rounded-2xl p-6">
-              <h3 className="font-bold text-primary mb-4 flex items-center gap-2">
-                <BookOpen size={18} className="text-accent" />
-                در این مقاله می‌خوانید
-              </h3>
-              <ul className="space-y-3 text-sm">
-                <li>
-                  <a
-                    href="#"
-                    className="text-foreground-muted hover:text-accent block border-r-2 border-transparent hover:border-accent pr-3 transition-all"
-                  >
-                    مقدمه
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-foreground-muted hover:text-accent block border-r-2 border-transparent hover:border-accent pr-3 transition-all"
-                  >
-                    سرفصل اول
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-foreground-muted hover:text-accent block border-r-2 border-transparent hover:border-accent pr-3 transition-all"
-                  >
-                    سرفصل دوم
-                  </a>
-                </li>
-              </ul>
-            </div>
+            {headings.length > 0 && (
+              <div className="bg-white border border-border rounded-2xl p-6">
+                <h3 className="font-bold text-primary mb-4 flex items-center gap-2">
+                  <BookOpen size={18} className="text-accent" />
+                  در این مقاله می‌خوانید
+                </h3>
+                <ul className="space-y-3 text-sm">
+                  {headings.map((heading) => (
+                    <li key={heading.id}>
+                      <a
+                        href={`#${heading.id}`}
+                        className={`text-foreground-muted hover:text-accent block border-r-2 border-transparent hover:border-accent pr-3 transition-all ${heading.level === 3 ? "mr-3 text-[13px]" : ""}`}
+                      >
+                        {heading.text}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* 👇 مقالات مرتبط */}
             {relatedArticles.length > 0 && (

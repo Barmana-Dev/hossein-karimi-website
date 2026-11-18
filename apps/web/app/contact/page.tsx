@@ -73,7 +73,13 @@ export default function ContactPage() {
 
       if (!res.ok) {
         if (json.error?.code === "VALIDATION_ERROR") {
-          setFieldErrors(json.error.fields);
+          const fields = json.error.fields || {};
+          setFieldErrors(fields);
+          const firstError = Object.values(fields)[0];
+          throw new Error(
+            (Array.isArray(firstError) ? firstError[0] : firstError) ||
+              "اطلاعات فرم معتبر نیست.",
+          );
         }
         throw new Error(json.error?.message || "خطایی در ثبت درخواست رخ داد.");
       }
@@ -289,7 +295,10 @@ export default function ContactPage() {
                       <select
                         name="type"
                         id="type"
-                        className="w-full bg-transparent border-b-2 border-border py-2 text-sm focus:outline-none focus:border-accent transition-colors appearance-none cursor-pointer"
+                        required
+                        aria-required="true"
+                        aria-invalid={Boolean(fieldErrors.type)}
+                        className={`w-full bg-transparent border-b-2 ${fieldErrors.type ? "border-red-500" : "border-border"} py-2 text-sm focus:outline-none focus:border-accent transition-colors appearance-none cursor-pointer`}
                       >
                         <option value="">انتخاب کنید...</option>
                         <option value="legal">مشاوره حقوقی</option>
@@ -298,6 +307,13 @@ export default function ContactPage() {
                         <option value="media">رسانه</option>
                         <option value="other">سایر</option>
                       </select>
+                      {fieldErrors.type && (
+                        <span className="text-[10px] text-red-500">
+                          {Array.isArray(fieldErrors.type)
+                            ? fieldErrors.type[0]
+                            : fieldErrors.type}
+                        </span>
+                      )}
                     </div>
                   </div>
 

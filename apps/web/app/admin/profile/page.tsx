@@ -25,6 +25,7 @@ export default function MyProfilePage() {
     name: "",
     email: "",
     password: "",
+    currentPassword: "",
   });
 
   // 👇 محو شدن خودکار پیغام‌ها
@@ -54,6 +55,7 @@ export default function MyProfilePage() {
             name: json.data.name,
             email: json.data.email,
             password: "",
+            currentPassword: "",
           });
         } else {
           router.push("/login");
@@ -87,7 +89,7 @@ export default function MyProfilePage() {
       if (!res.ok) throw new Error(data.error?.message || "خطا در ذخیره");
 
       setSuccessMsg("اطلاعات با موفقیت به‌روزرسانی شد.");
-      setFormData((prev) => ({ ...prev, password: "" }));
+      setFormData((prev) => ({ ...prev, password: "", currentPassword: "" }));
       router.refresh();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "خطای ناشناخته");
@@ -175,12 +177,32 @@ export default function MyProfilePage() {
             name="password"
             type="password"
             dir="ltr"
+            autoComplete="new-password"
             value={formData.password}
             onChange={handleChange}
             placeholder="برای عدم تغییر، خالی بگذارید"
             className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm text-left focus:outline-none focus:border-accent"
           />
         </div>
+
+        {formData.password && (
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-primary flex items-center gap-2">
+              <Key size={14} className="text-accent" /> رمز عبور فعلی
+            </label>
+            <input
+              name="currentPassword"
+              type="password"
+              dir="ltr"
+              autoComplete="current-password"
+              value={formData.currentPassword}
+              onChange={handleChange}
+              required
+              placeholder="برای تغییر رمز، رمز فعلی را وارد کنید"
+              className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm text-left focus:outline-none focus:border-accent"
+            />
+          </div>
+        )}
       </div>
     </div>
   );

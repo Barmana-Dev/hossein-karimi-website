@@ -6,11 +6,14 @@ import { cn } from "@/lib/utils";
 type Variant = "primary" | "outline" | "ghost" | "accent";
 type Size = "sm" | "md" | "lg";
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+// 👇 onClick برای هر دو حالت دکمه و لینک قابل استفاده است
+interface ButtonProps
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
   children: React.ReactNode;
   href?: string;
   variant?: Variant;
   size?: Size;
+  onClick?: React.MouseEventHandler<HTMLElement>;
 }
 
 const variants: Record<Variant, string> = {
@@ -94,7 +97,7 @@ export function Button({
 
   if (href) {
     return (
-      <Link href={href} className={classes}>
+      <Link href={href} className={classes} onClick={onClick}>
         {content}
       </Link>
     );

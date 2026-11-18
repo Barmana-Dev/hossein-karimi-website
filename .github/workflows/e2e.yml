@@ -40,8 +40,12 @@ jobs:
           node-version: 24
           cache: npm
 
-      - name: Install dependencies
+      - name: Install dependencies (web)
         run: npm ci
+
+      # 👇 apps/api وابستگی‌های مستقل خودش را دارد (workspace نیست)
+      - name: Install dependencies (API)
+        run: npm ci --prefix apps/api
 
       - name: Generate Prisma client
         working-directory: apps/api

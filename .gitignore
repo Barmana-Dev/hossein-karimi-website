@@ -50,6 +50,9 @@ yarn-error.log*
 # لاگ‌های محلی اجرای دولوپمنت
 dev-web.log
 api-dev.log
+next-start.log
+prod-start.log
+playwright-install.log
 
 # env files
 .env

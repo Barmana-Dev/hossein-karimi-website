@@ -71,6 +71,8 @@ class ExperienceService {
             updateData.description = data.description;
         if (data.status !== undefined)
             updateData.status = data.status;
+        if (data.sourceUrl !== undefined)
+            updateData.sourceUrl = data.sourceUrl;
         // 👇 تاریخ‌ها فقط اگه ارسال شده باشن
         if (data.startDate !== undefined) {
             updateData.startDate = data.startDate ? new Date(data.startDate) : null;

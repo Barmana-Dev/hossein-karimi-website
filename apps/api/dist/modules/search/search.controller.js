@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SearchController = void 0;
+const error_message_1 = require("../../lib/error-message");
 const search_service_1 = require("./search.service");
 const searchService = new search_service_1.SearchService();
 const MAX_QUERY_LENGTH = 100;
@@ -13,7 +14,7 @@ class SearchController {
             res.json({ success: true, data: results });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطا";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطا");
             res.status(500).json({ success: false, error: { message } });
         }
     }

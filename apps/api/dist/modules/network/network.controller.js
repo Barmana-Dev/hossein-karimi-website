@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NetworkController = void 0;
+const error_message_1 = require("../../lib/error-message");
 const network_service_1 = require("./network.service");
 const pagination_1 = require("../../lib/pagination");
 const client_1 = require("../../generated/prisma/client");
@@ -14,7 +15,7 @@ class NetworkController {
             res.json({ success: true, data: agencies });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -29,7 +30,7 @@ class NetworkController {
             res.json({ success: true, data: agency });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -53,7 +54,7 @@ class NetworkController {
             });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -80,7 +81,7 @@ class NetworkController {
                     error: { message: "این اسلاگ قبلاً استفاده شده است." },
                 });
             }
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -94,7 +95,7 @@ class NetworkController {
             res.json({ success: true, data: agency });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -121,7 +122,7 @@ class NetworkController {
                     error: { message: "این اسلاگ قبلاً استفاده شده است." },
                 });
             }
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -131,7 +132,7 @@ class NetworkController {
             res.json({ success: true, message: "حذف شد" });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }

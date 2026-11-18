@@ -1,3 +1,4 @@
+import { publicErrorMessage } from "../../lib/error-message";
 import { Request, Response } from "express";
 import { InquiriesService, inquirySchema } from "./inquiries.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
@@ -53,7 +54,7 @@ export class InquiriesController {
           : undefined,
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطا";
+      const message = publicErrorMessage(error, "خطا");
       res.status(500).json({ success: false, error: { message } });
     }
   }
@@ -95,7 +96,7 @@ export class InquiriesController {
           },
         });
       }
-      const message = error instanceof Error ? error.message : "خطا";
+      const message = publicErrorMessage(error, "خطا");
       res.status(500).json({ success: false, error: { message } });
     }
   }
@@ -117,7 +118,7 @@ export class InquiriesController {
 
       res.json({ success: true, message: "درخواست با موفقیت حذف شد" });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
+      const message = publicErrorMessage(error, "خطای ناشناخته");
       res.status(500).json({ success: false, error: { message } });
     }
   }

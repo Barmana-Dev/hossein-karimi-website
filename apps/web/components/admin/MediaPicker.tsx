@@ -29,6 +29,51 @@ export function MediaPicker({ onSelect, onClose }: MediaPickerProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  // 👇 رفتار دیالوگ: فوکوس اولیه، Escape، قفل اسکرول و محدودکردن Tab
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+      previouslyFocused?.focus?.();
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -88,10 +133,18 @@ export function MediaPicker({ onSelect, onClose }: MediaPickerProps) {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-primary/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-[800px] shadow-2xl flex flex-col max-h-[85vh]">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="media-picker-title"
+        className="bg-white rounded-2xl w-full max-w-[800px] shadow-2xl flex flex-col max-h-[85vh]"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-lg font-bold text-primary">انتخاب تصویر</h2>
+          <h2 id="media-picker-title" className="text-lg font-bold text-primary">
+            انتخاب تصویر
+          </h2>
           <div className="flex items-center gap-3">
             <input
               type="file"
@@ -114,7 +167,9 @@ export function MediaPicker({ onSelect, onClose }: MediaPickerProps) {
               آپلود عکس جدید
             </Button>
             <button
+              ref={closeButtonRef}
               onClick={onClose}
+              aria-label="بستن انتخاب تصویر"
               className="text-foreground-muted hover:text-primary p-2"
             >
               <X size={20} />
@@ -136,10 +191,12 @@ export function MediaPicker({ onSelect, onClose }: MediaPickerProps) {
           ) : assets.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {assets.map((asset) => (
-                <div
+                <button
+                  type="button"
                   key={asset.id}
                   onClick={() => onSelect(asset.urlOrKey)}
-                  className="group relative aspect-square rounded-xl overflow-hidden border border-border cursor-pointer hover:border-accent transition-all"
+                  aria-label={`انتخاب تصویر ${asset.altText || "بدون عنوان"}`}
+                  className="group relative aspect-square rounded-xl overflow-hidden border border-border cursor-pointer hover:border-accent focus:outline-none focus:ring-2 focus:ring-accent transition-all"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img loading="lazy" decoding="async"
@@ -150,7 +207,7 @@ export function MediaPicker({ onSelect, onClose }: MediaPickerProps) {
                   <div className="absolute inset-0 bg-primary/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
                     <CheckCircle2 size={32} className="text-white" />
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           ) : (

@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MediaItemController = void 0;
+const error_message_1 = require("../../lib/error-message");
 const zod_1 = require("zod");
 const media_service_1 = require("./media.service");
 const pagination_1 = require("../../lib/pagination");
@@ -23,7 +24,7 @@ class MediaItemController {
             res.json({ success: true, data });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -52,7 +53,7 @@ class MediaItemController {
             });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -66,7 +67,7 @@ class MediaItemController {
             if (error instanceof zod_1.ZodError) {
                 return sendValidationError(res, error);
             }
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -80,7 +81,7 @@ class MediaItemController {
             res.json({ success: true, data });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -94,7 +95,7 @@ class MediaItemController {
             if (error instanceof zod_1.ZodError) {
                 return sendValidationError(res, error);
             }
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -104,7 +105,7 @@ class MediaItemController {
             res.json({ success: true });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }

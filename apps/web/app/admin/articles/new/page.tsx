@@ -32,6 +32,8 @@ export default function NewArticlePage() {
     status: "draft",
     readTime: 5,
     coverImage: "",
+    metaTitle: "",
+    metaDescription: "",
   });
 
   const handleChange = (
@@ -216,6 +218,9 @@ export default function NewArticlePage() {
                     Meta Title
                   </label>
                   <input
+                    name="metaTitle"
+                    value={formData.metaTitle}
+                    onChange={handleChange}
                     type="text"
                     placeholder="عنوان سئو..."
                     className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent"
@@ -226,6 +231,9 @@ export default function NewArticlePage() {
                     Meta Description
                   </label>
                   <textarea
+                    name="metaDescription"
+                    value={formData.metaDescription}
+                    onChange={handleChange}
                     rows={3}
                     placeholder="توضیحات سئو..."
                     className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent resize-none"
@@ -243,6 +251,7 @@ export default function NewArticlePage() {
             </h3>
             <select
               name="status"
+              aria-label="وضعیت انتشار"
               value={formData.status}
               onChange={handleChange}
               className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-accent"
@@ -259,6 +268,7 @@ export default function NewArticlePage() {
             </h3>
             <select
               name="category"
+              aria-label="دسته‌بندی مقاله"
               value={formData.category}
               onChange={handleChange}
               className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-accent"

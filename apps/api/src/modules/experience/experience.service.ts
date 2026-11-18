@@ -10,6 +10,7 @@ export interface CreateExperienceDTO {
   status: string;
   startDate?: string | null;
   endDate?: string | null;
+  sourceUrl?: string | null;
 }
 
 export class ExperienceService {
@@ -81,6 +82,7 @@ export class ExperienceService {
     if (data.description !== undefined)
       updateData.description = data.description;
     if (data.status !== undefined) updateData.status = data.status;
+    if (data.sourceUrl !== undefined) updateData.sourceUrl = data.sourceUrl;
 
     // 👇 تاریخ‌ها فقط اگه ارسال شده باشن
     if (data.startDate !== undefined) {

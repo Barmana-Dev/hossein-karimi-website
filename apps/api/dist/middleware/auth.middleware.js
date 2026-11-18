@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.requireRole = exports.requireAuth = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const prisma_1 = require("../config/prisma");
+const env_1 = require("../config/env");
 // ۱. بررسی لاگین بودن + فعال بودن کاربر
 const requireAuth = async (req, res, next) => {
     const token = req.cookies.token;
@@ -16,12 +17,26 @@ const requireAuth = async (req, res, next) => {
         });
     }
     try {
-        const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
+        // 👇 همان کلیدی که توکن با آن امضا شده (شامل مقدار fallback توسعه)
+        const decoded = jsonwebtoken_1.default.verify(token, env_1.config.jwtSecret);
         // 👇 چک کن کاربر هنوز وجود داره و فعاله
         const user = await prisma_1.prisma.adminUser.findUnique({
             where: { id: decoded.userId },
-            select: { id: true, isActive: true, role: true },
+            select: {
+                id: true,
+                isActive: true,
+                role: true,
+                tokenVersion: true,
+            },
         });
+        // 👇 توکن‌های قبل از تغییر رمز یا خروج باطل شده‌اند
+        const tokenVersion = decoded.tokenVersion ?? 0;
+        if (user && tokenVersion !== user.tokenVersion) {
+            return res.status(401).json({
+                success: false,
+                error: { message: "نشست شما منقضی شده است. دوباره وارد شوید." },
+            });
+        }
         if (!user || !user.isActive) {
             return res.status(401).json({
                 success: false,

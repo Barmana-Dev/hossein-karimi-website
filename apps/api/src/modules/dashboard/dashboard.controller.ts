@@ -1,3 +1,4 @@
+import { publicErrorMessage } from "../../lib/error-message";
 import { Response } from "express";
 import { DashboardService } from "./dashboard.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
@@ -12,7 +13,7 @@ export class DashboardController {
       const data = await dashboardService.getStats(role);
       res.json({ success: true, data });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطا";
+      const message = publicErrorMessage(error, "خطا");
       res.status(500).json({ success: false, error: { message } });
     }
   }

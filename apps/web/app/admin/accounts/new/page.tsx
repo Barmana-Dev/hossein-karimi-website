@@ -111,6 +111,7 @@ export default function NewAdminPage() {
           <div className="space-y-2">
             <label className="text-xs font-bold">نقش</label>
             <select
+              aria-label="نقش کاربر"
               value={formData.role}
               onChange={(e) =>
                 setFormData({ ...formData, role: e.target.value })
@@ -118,6 +119,7 @@ export default function NewAdminPage() {
               className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm"
             >
               <option value="EDITOR">نویسنده (Editor)</option>
+              <option value="INQUIRY_MANAGER">مدیر درخواست‌ها</option>
               <option value="SUPER_ADMIN">مدیر ارشد (Super Admin)</option>
             </select>
           </div>

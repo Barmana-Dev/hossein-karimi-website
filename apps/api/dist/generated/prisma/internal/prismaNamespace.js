@@ -129,6 +129,7 @@ exports.AdminUserScalarFieldEnum = {
     passwordHash: 'passwordHash',
     role: 'role',
     isActive: 'isActive',
+    tokenVersion: 'tokenVersion',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
 };
@@ -174,6 +175,8 @@ exports.ArticleScalarFieldEnum = {
     readTime: 'readTime',
     status: 'status',
     coverImage: 'coverImage',
+    metaTitle: 'metaTitle',
+    metaDescription: 'metaDescription',
     publishedAt: 'publishedAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'

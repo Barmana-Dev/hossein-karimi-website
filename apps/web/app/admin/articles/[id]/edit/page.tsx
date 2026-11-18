@@ -23,6 +23,8 @@ interface Article {
   status: string;
   readTime: number;
   coverImage: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
 }
 
 export default function EditArticlePage() {
@@ -44,6 +46,8 @@ export default function EditArticlePage() {
     status: "draft",
     readTime: 5,
     coverImage: "",
+    metaTitle: "",
+    metaDescription: "",
   });
 
   useEffect(() => {
@@ -196,6 +200,30 @@ export default function EditArticlePage() {
               className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm resize-none"
             />
           </div>
+
+          <div className="grid md:grid-cols-2 gap-5 pt-4 border-t border-border">
+            <div className="space-y-2">
+              <label className="text-xs font-bold">Meta Title</label>
+              <input
+                name="metaTitle"
+                value={formData.metaTitle || ""}
+                onChange={handleChange}
+                placeholder="عنوان سئو..."
+                className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold">Meta Description</label>
+              <textarea
+                name="metaDescription"
+                value={formData.metaDescription || ""}
+                onChange={handleChange}
+                rows={3}
+                placeholder="توضیحات سئو..."
+                className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm resize-none"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -203,6 +231,7 @@ export default function EditArticlePage() {
             <h3 className="text-sm font-bold">وضعیت انتشار</h3>
             <select
               name="status"
+              aria-label="وضعیت انتشار"
               value={formData.status}
               onChange={handleChange}
               className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm"
@@ -217,6 +246,7 @@ export default function EditArticlePage() {
             <h3 className="text-sm font-bold">دسته‌بندی</h3>
             <select
               name="category"
+              aria-label="دسته‌بندی مقاله"
               value={formData.category}
               onChange={handleChange}
               className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm"

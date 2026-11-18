@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Save,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
@@ -88,12 +89,19 @@ export default function InquiryDetailPage() {
         body: JSON.stringify({ status, internalNote: note }),
         credentials: "include",
       });
-      if (res.ok) {
-        alert("تغییرات ذخیره شد");
-        router.push("/admin/inquiries");
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(
+          data?.error?.message || "ذخیرهٔ تغییرات انجام نشد. دوباره تلاش کنید.",
+        );
       }
+
+      setSuccessMsg("تغییرات ذخیره شد");
+      router.push("/admin/inquiries");
     } catch (error) {
-      console.error(error);
+      setError(
+        error instanceof Error ? error.message : "ذخیرهٔ تغییرات انجام نشد.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -133,6 +141,20 @@ export default function InquiryDetailPage() {
           ذخیره تغییرات
         </Button>
       </div>
+
+      {error && (
+        <div
+          role="alert"
+          className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-center gap-2"
+        >
+          <AlertCircle size={18} /> {error}
+        </div>
+      )}
+      {successMsg && (
+        <div className="p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm flex items-center gap-2">
+          <CheckCircle2 size={18} /> {successMsg}
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-[2fr_1fr] gap-6">
         <div className="space-y-6">

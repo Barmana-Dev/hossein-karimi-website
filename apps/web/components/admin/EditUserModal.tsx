@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Save, Loader2, AlertCircle } from "lucide-react";
 import { API_URL } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
@@ -20,6 +20,9 @@ interface Props {
 }
 
 export function EditUserModal({ userId, onClose, onSuccess }: Props) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +36,48 @@ export function EditUserModal({ userId, onClose, onSuccess }: Props) {
     isActive: true,
     password: "",
   });
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  // 👇 رفتار دیالوگ: فوکوس اولیه، Escape، قفل اسکرول و محدودکردن Tab
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+      previouslyFocused?.focus?.();
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -84,12 +129,21 @@ export function EditUserModal({ userId, onClose, onSuccess }: Props) {
     setIsLoading(true);
     setError(null);
     try {
+      // 👇 فقط فیلدهای مجاز ارسال می‌شوند؛ ارسال id باعث رد شدن با strict schema می‌شد
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        role: formData.role,
+        isActive: formData.isActive,
+        ...(formData.password ? { password: formData.password } : {}),
+      };
+
       const res = await fetch(
         `${API_URL}/auth/admin/users/${userId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(payload),
           credentials: "include",
         },
       );
@@ -106,11 +160,21 @@ export function EditUserModal({ userId, onClose, onSuccess }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-[500px] shadow-2xl animate-in zoom-in-95 duration-200">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-user-title"
+        className="bg-white rounded-2xl w-full max-w-[500px] shadow-2xl animate-in zoom-in-95 duration-200"
+      >
         <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-lg font-bold text-primary">ویرایش کاربر</h2>
+          <h2 id="edit-user-title" className="text-lg font-bold text-primary">
+            ویرایش کاربر
+          </h2>
           <button
+            ref={closeButtonRef}
             onClick={onClose}
+            aria-label="بستن"
             className="text-foreground-muted hover:text-primary"
           >
             <X size={20} />
@@ -176,11 +240,13 @@ export function EditUserModal({ userId, onClose, onSuccess }: Props) {
                   <label className="text-xs font-bold">نقش</label>
                   <select
                     name="role"
+                    aria-label="نقش کاربر"
                     value={formData.role || "EDITOR"}
                     onChange={handleChange}
                     className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none"
                   >
                     <option value="EDITOR">نویسنده</option>
+                    <option value="INQUIRY_MANAGER">مدیر درخواست‌ها</option>
                     <option value="SUPER_ADMIN">مدیر ارشد</option>
                   </select>
                 </div>

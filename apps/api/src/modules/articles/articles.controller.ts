@@ -1,3 +1,4 @@
+import { publicErrorMessage } from "../../lib/error-message";
 import { Request, Response } from "express";
 import { ArticlesService } from "./articles.service";
 
@@ -9,7 +10,7 @@ export class ArticlesController {
       const articles = await articlesService.getPublishedArticles();
       res.json({ success: true, data: articles });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
+      const message = publicErrorMessage(error, "خطای ناشناخته");
       res.status(500).json({ success: false, error: { message } });
     }
   }
@@ -27,7 +28,7 @@ export class ArticlesController {
 
       res.json({ success: true, data: article });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
+      const message = publicErrorMessage(error, "خطای ناشناخته");
       res.status(500).json({ success: false, error: { message } });
     }
   }

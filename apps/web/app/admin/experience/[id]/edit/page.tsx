@@ -37,6 +37,7 @@ export default function EditExperiencePage() {
     status: "draft",
     startDate: undefined as Date | undefined, // 👈 Date | undefined
     endDate: undefined as Date | undefined,
+    sourceUrl: "",
   });
 
   useEffect(() => {
@@ -90,9 +91,13 @@ export default function EditExperiencePage() {
         status: formData.status,
       };
 
-      // 👇 تاریخ‌ها فقط اگه انتخاب شده باشن
-      if (formData.startDate) payload.startDate = toISO(formData.startDate);
-      if (formData.endDate) payload.endDate = toISO(formData.endDate);
+      // 👇 پاک‌کردن تاریخ باید null بفرستد؛ undefined یعنی «بدون تغییر»
+      payload.startDate = formData.startDate ? toISO(formData.startDate) : null;
+      payload.endDate = formData.endDate ? toISO(formData.endDate) : null;
+      // 👇 پاک‌کردن آدرس منبع هم باید ذخیره شود، پس null فرستاده می‌شود
+      payload.sourceUrl = formData.sourceUrl?.trim()
+        ? formData.sourceUrl.trim()
+        : null;
 
       const res = await fetch(`${API_URL}/public/experience/admin/${id}`, {
         method: "PATCH",
@@ -245,9 +250,21 @@ export default function EditExperiencePage() {
           />
         </div>
         <div className="space-y-2">
+          <label className="text-xs font-bold">لینک منبع (اختیاری)</label>
+          <input
+            name="sourceUrl"
+            value={formData.sourceUrl || ""}
+            onChange={handleChange}
+            dir="ltr"
+            placeholder="https://..."
+            className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm text-left"
+          />
+        </div>
+        <div className="space-y-2">
           <label className="text-xs font-bold">وضعیت</label>
           <select
             name="status"
+            aria-label="وضعیت انتشار"
             value={formData.status}
             onChange={handleChange}
             className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm"

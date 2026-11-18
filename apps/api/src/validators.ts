@@ -1,5 +1,17 @@
 import { z } from "zod";
 
+// ===== اسلاگ =====
+// 👇 اسلاگ باید یک segment معتبر از URL باشد؛ / ? # % \ و فاصله مجاز نیست
+const slugField = z
+  .string()
+  .trim()
+  .min(1, "اسلاگ الزامی است")
+  .max(100)
+  .regex(
+    /^[^\/\\?#%\s]+$/,
+    "اسلاگ نمی‌تواند شامل / ، ? ، # ، % یا فاصله باشد",
+  );
+
 // ===== Experience =====
 // 👇 فقط آدرس http/https یا مقدار خالی/تهی پذیرفته می‌شود (جلوگیری از javascript:)
 const optionalExternalUrl = z
@@ -12,7 +24,7 @@ const optionalExternalUrl = z
   .optional();
 
 export const experienceCreateSchema = z.object({
-  slug: z.string().min(1, "اسلاگ الزامی است").max(100),
+  slug: slugField,
   title: z.string().min(1, "عنوان الزامی است").max(200),
   organization: z.string().min(1, "نهاد الزامی است").max(200),
   category: z.enum(["customs", "legal", "management", "education", "business"]),
@@ -28,7 +40,7 @@ export const experienceUpdateSchema = experienceCreateSchema.partial();
 
 // ===== Article =====
 export const articleCreateSchema = z.object({
-  slug: z.string().min(1, "اسلاگ الزامی است").max(100),
+  slug: slugField,
   title: z.string().min(1, "عنوان الزامی است").max(200),
   excerpt: z.string().min(1, "خلاصه الزامی است"),
   body: z.string().min(1, "متن مقاله الزامی است"),
@@ -43,6 +55,8 @@ export const articleCreateSchema = z.object({
   }),
   publishedAt: z.string().datetime().nullable().optional(),
   coverImage: z.string().nullable().optional(),
+  metaTitle: z.string().max(200).nullable().optional(),
+  metaDescription: z.string().max(500).nullable().optional(),
   // 👇 authorName حذف شد (بک‌اند خودش ست می‌کنه)
 });
 
@@ -50,7 +64,7 @@ export const articleUpdateSchema = articleCreateSchema.partial();
 
 // ===== Agency (Network) =====
 export const agencyCreateSchema = z.object({
-  slug: z.string().min(1, "اسلاگ الزامی است").max(100),
+  slug: slugField,
   name: z.string().min(1, "نام مجموعه الزامی است").max(200),
   description: z.string().min(1, "توضیحات الزامی است"),
   field: z.string().min(1, "حوزه فعالیت الزامی است").max(100),
@@ -68,7 +82,7 @@ export const agencyUpdateSchema = agencyCreateSchema.partial();
 
 // ===== Expertise =====
 export const expertiseCreateSchema = z.object({
-  slug: z.string().min(1, "اسلاگ الزامی است").max(100),
+  slug: slugField,
   title: z.string().min(1, "عنوان الزامی است").max(200),
   summary: z.string().min(1, "خلاصه الزامی است"),
   body: z.string().min(1, "متن الزامی است"),
@@ -156,10 +170,14 @@ const emailField = z
   .max(200)
   .transform((value) => value.toLowerCase());
 
+// 👇 bcrypt فقط ۷۲ بایت اول رمز را مقایسه می‌کند؛ پس بخش اضافی نباید پذیرفته شود
 const passwordField = z
   .string()
   .min(8, "رمز عبور باید حداقل ۸ کاراکتر باشد")
-  .max(200, "رمز عبور بیش از حد طولانی است");
+  .max(72, "رمز عبور بیش از حد طولانی است")
+  .refine((value) => Buffer.byteLength(value, "utf8") <= 72, {
+    message: "رمز عبور نباید بیشتر از ۷۲ بایت (UTF-8) باشد",
+  });
 
 export const adminUserCreateSchema = z
   .object({
@@ -186,6 +204,8 @@ export const profileUpdateSchema = z
     name: z.string().trim().min(2, "نام الزامی است").max(120).optional(),
     email: emailField.optional(),
     password: passwordField.optional().or(z.literal("")),
+    // 👇 هنگام تعیین رمز جدید، رمز فعلی برای تأیید هویت الزامی است
+    currentPassword: z.string().max(200).optional().or(z.literal("")),
   })
   .strict();
 

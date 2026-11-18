@@ -37,6 +37,10 @@ app.use((0, helmet_1.default)({
     crossOriginResourcePolicy: { policy: "cross-origin" },
     // این API صفحهٔ HTML سرو نمی‌کند؛ CSP روی Swagger اعمال نمی‌شود
     contentSecurityPolicy: false,
+    // 👇 HSTS فقط در پروداکشن؛ در دولوپمنت مرورگر را روی localhost مجبور به https می‌کند
+    hsts: env_1.config.isProduction
+        ? { maxAge: 31536000, includeSubDomains: true }
+        : false,
 }));
 // ====== تنظیمات CORS ======
 app.use((0, cors_1.default)({

@@ -85,6 +85,7 @@ export const AdminUserScalarFieldEnum = {
   passwordHash: 'passwordHash',
   role: 'role',
   isActive: 'isActive',
+  tokenVersion: 'tokenVersion',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -138,6 +139,8 @@ export const ArticleScalarFieldEnum = {
   readTime: 'readTime',
   status: 'status',
   coverImage: 'coverImage',
+  metaTitle: 'metaTitle',
+  metaDescription: 'metaDescription',
   publishedAt: 'publishedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

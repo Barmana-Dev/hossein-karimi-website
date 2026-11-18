@@ -197,7 +197,7 @@ export type InquiryGroupByOutputType = {
   type: string
   subject: string
   message: string
-  consentAt: Date
+  consentAt: Date | null
   status: string
   internalNote: string | null
   createdAt: Date
@@ -233,7 +233,7 @@ export type InquiryWhereInput = {
   type?: Prisma.StringFilter<"Inquiry"> | string
   subject?: Prisma.StringFilter<"Inquiry"> | string
   message?: Prisma.StringFilter<"Inquiry"> | string
-  consentAt?: Prisma.DateTimeFilter<"Inquiry"> | Date | string
+  consentAt?: Prisma.DateTimeNullableFilter<"Inquiry"> | Date | string | null
   status?: Prisma.StringFilter<"Inquiry"> | string
   internalNote?: Prisma.StringNullableFilter<"Inquiry"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Inquiry"> | Date | string
@@ -248,7 +248,7 @@ export type InquiryOrderByWithRelationInput = {
   type?: Prisma.SortOrder
   subject?: Prisma.SortOrder
   message?: Prisma.SortOrder
-  consentAt?: Prisma.SortOrder
+  consentAt?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   internalNote?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -266,7 +266,7 @@ export type InquiryWhereUniqueInput = Prisma.AtLeast<{
   type?: Prisma.StringFilter<"Inquiry"> | string
   subject?: Prisma.StringFilter<"Inquiry"> | string
   message?: Prisma.StringFilter<"Inquiry"> | string
-  consentAt?: Prisma.DateTimeFilter<"Inquiry"> | Date | string
+  consentAt?: Prisma.DateTimeNullableFilter<"Inquiry"> | Date | string | null
   status?: Prisma.StringFilter<"Inquiry"> | string
   internalNote?: Prisma.StringNullableFilter<"Inquiry"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Inquiry"> | Date | string
@@ -281,7 +281,7 @@ export type InquiryOrderByWithAggregationInput = {
   type?: Prisma.SortOrder
   subject?: Prisma.SortOrder
   message?: Prisma.SortOrder
-  consentAt?: Prisma.SortOrder
+  consentAt?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   internalNote?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -302,7 +302,7 @@ export type InquiryScalarWhereWithAggregatesInput = {
   type?: Prisma.StringWithAggregatesFilter<"Inquiry"> | string
   subject?: Prisma.StringWithAggregatesFilter<"Inquiry"> | string
   message?: Prisma.StringWithAggregatesFilter<"Inquiry"> | string
-  consentAt?: Prisma.DateTimeWithAggregatesFilter<"Inquiry"> | Date | string
+  consentAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Inquiry"> | Date | string | null
   status?: Prisma.StringWithAggregatesFilter<"Inquiry"> | string
   internalNote?: Prisma.StringNullableWithAggregatesFilter<"Inquiry"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Inquiry"> | Date | string
@@ -317,7 +317,7 @@ export type InquiryCreateInput = {
   type: string
   subject: string
   message: string
-  consentAt?: Date | string
+  consentAt?: Date | string | null
   status?: string
   internalNote?: string | null
   createdAt?: Date | string
@@ -332,7 +332,7 @@ export type InquiryUncheckedCreateInput = {
   type: string
   subject: string
   message: string
-  consentAt?: Date | string
+  consentAt?: Date | string | null
   status?: string
   internalNote?: string | null
   createdAt?: Date | string
@@ -347,7 +347,7 @@ export type InquiryUpdateInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
-  consentAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  consentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   internalNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -362,7 +362,7 @@ export type InquiryUncheckedUpdateInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
-  consentAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  consentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   internalNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -377,7 +377,7 @@ export type InquiryCreateManyInput = {
   type: string
   subject: string
   message: string
-  consentAt?: Date | string
+  consentAt?: Date | string | null
   status?: string
   internalNote?: string | null
   createdAt?: Date | string
@@ -392,7 +392,7 @@ export type InquiryUpdateManyMutationInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
-  consentAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  consentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   internalNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -407,7 +407,7 @@ export type InquiryUncheckedUpdateManyInput = {
   type?: Prisma.StringFieldUpdateOperationsInput | string
   subject?: Prisma.StringFieldUpdateOperationsInput | string
   message?: Prisma.StringFieldUpdateOperationsInput | string
-  consentAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  consentAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.StringFieldUpdateOperationsInput | string
   internalNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -534,7 +534,7 @@ export type $InquiryPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     type: string
     subject: string
     message: string
-    consentAt: Date
+    consentAt: Date | null
     status: string
     internalNote: string | null
     createdAt: Date

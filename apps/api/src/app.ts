@@ -39,6 +39,10 @@ app.use(
     crossOriginResourcePolicy: { policy: "cross-origin" },
     // این API صفحهٔ HTML سرو نمی‌کند؛ CSP روی Swagger اعمال نمی‌شود
     contentSecurityPolicy: false,
+    // 👇 HSTS فقط در پروداکشن؛ در دولوپمنت مرورگر را روی localhost مجبور به https می‌کند
+    hsts: config.isProduction
+      ? { maxAge: 31536000, includeSubDomains: true }
+      : false,
   }),
 );
 

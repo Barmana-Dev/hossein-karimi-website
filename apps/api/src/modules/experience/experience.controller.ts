@@ -1,3 +1,4 @@
+import { publicErrorMessage } from "../../lib/error-message";
 import { Request, Response } from "express";
 import { ExperienceService } from "./experience.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
@@ -21,7 +22,7 @@ export class ExperienceController {
     } catch (error: unknown) {
       res.status(500).json({
         success: false,
-        error: { message: error instanceof Error ? error.message : "خطا" },
+        error: { message: publicErrorMessage(error, "خطا") },
       });
     }
   }

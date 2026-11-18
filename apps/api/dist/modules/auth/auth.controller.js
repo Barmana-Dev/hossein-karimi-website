@@ -1,10 +1,16 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const zod_1 = require("zod");
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const auth_service_1 = require("./auth.service");
 const prisma_1 = require("../../config/prisma");
 const env_1 = require("../../config/env");
+const auth_cookie_1 = require("../../lib/auth-cookie");
+const error_message_1 = require("../../lib/error-message");
 const authService = new auth_service_1.AuthService();
 const loginSchema = zod_1.z.object({
     email: zod_1.z.string().email("ایمیل نامعتبر است"),
@@ -16,14 +22,8 @@ class AuthController {
             // اعتبارسنجی ورودی
             const { email, password } = loginSchema.parse(req.body);
             const result = await authService.login(email, password);
-            // تنظیم کوکی امن (HttpOnly)
-            res.cookie("token", result.token, {
-                httpOnly: true,
-                secure: env_1.config.cookieSecure,
-                sameSite: "strict",
-                path: "/",
-                maxAge: 24 * 60 * 60 * 1000, // ۱ روز
-            });
+            // تنظیم کوکی امن (HttpOnly) — با domain مشترک در استقرار چندزیردامنه‌ای
+            (0, auth_cookie_1.setAuthCookie)(res, result.token);
             res.json({
                 success: true,
                 data: result.user,
@@ -54,7 +54,24 @@ class AuthController {
         }
     }
     async logout(req, res) {
-        res.clearCookie("token");
+        // 👇 توکن فعلی را باطل می‌کنیم؛ پاک‌کردن کوکی به‌تنهایی توکن دزدیده‌شده را
+        // تا زمان انقضا معتبر باقی می‌گذاشت.
+        const token = req.cookies?.token;
+        if (token) {
+            try {
+                const decoded = jsonwebtoken_1.default.verify(token, env_1.config.jwtSecret);
+                if (decoded.userId) {
+                    await prisma_1.prisma.adminUser.update({
+                        where: { id: decoded.userId },
+                        data: { tokenVersion: { increment: 1 } },
+                    });
+                }
+            }
+            catch {
+                // توکن نامعتبر یا منقضی: فقط کوکی پاک می‌شود
+            }
+        }
+        (0, auth_cookie_1.clearAuthCookie)(res);
         res.json({ success: true, message: "خروج انجام شد" });
     }
     async getMe(req, res) {
@@ -78,8 +95,12 @@ class AuthController {
             });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
-            res.status(500).json({ success: false, error: { message } });
+            res.status(500).json({
+                success: false,
+                error: {
+                    message: (0, error_message_1.publicErrorMessage)(error, "خطای داخلی سرور رخ داده است."),
+                },
+            });
         }
     }
 }

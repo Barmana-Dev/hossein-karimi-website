@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ArticlesController = void 0;
+const error_message_1 = require("../../lib/error-message");
 const articles_service_1 = require("./articles.service");
 const articlesService = new articles_service_1.ArticlesService();
 class ArticlesController {
@@ -10,7 +11,7 @@ class ArticlesController {
             res.json({ success: true, data: articles });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -26,7 +27,7 @@ class ArticlesController {
             res.json({ success: true, data: article });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }

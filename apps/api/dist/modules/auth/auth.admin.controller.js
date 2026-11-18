@@ -8,6 +8,10 @@ const zod_1 = require("zod");
 const prisma_1 = require("../../config/prisma");
 const client_1 = require("../../generated/prisma/client");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const env_1 = require("../../config/env");
+const auth_cookie_1 = require("../../lib/auth-cookie");
+const error_message_1 = require("../../lib/error-message");
 const validators_1 = require("../../validators");
 // نقش‌های مجاز سیستم
 exports.ALLOWED_ROLES = ["SUPER_ADMIN", "EDITOR", "INQUIRY_MANAGER"];
@@ -42,7 +46,7 @@ class AuthAdminController {
             res.json({ success: true, data: users });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -87,7 +91,7 @@ class AuthAdminController {
                     error: { message: "این ایمیل قبلاً ثبت شده است" },
                 });
             }
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -120,9 +124,41 @@ class AuthAdminController {
         try {
             const id = req.params.id;
             const { name, email, role, isActive, password } = validators_1.adminUserUpdateSchema.parse(req.body);
-            const dataToUpdate = { name, email, role, isActive };
+            const target = await prisma_1.prisma.adminUser.findUnique({ where: { id } });
+            if (!target) {
+                return res
+                    .status(404)
+                    .json({ success: false, error: { message: "کاربر یافت نشد" } });
+            }
+            // 👇 آخرین SUPER_ADMIN فعال نباید تنزل یا غیرفعال شود
+            const removesActiveSuperAdmin = target.role === "SUPER_ADMIN" &&
+                target.isActive &&
+                ((role !== undefined && role !== "SUPER_ADMIN") || isActive === false);
+            if (removesActiveSuperAdmin) {
+                const activeSuperAdmins = await prisma_1.prisma.adminUser.count({
+                    where: { role: "SUPER_ADMIN", isActive: true },
+                });
+                if (activeSuperAdmins <= 1) {
+                    return res.status(400).json({
+                        success: false,
+                        error: {
+                            message: "نمی‌توانید آخرین سوپر ادمین فعال را تنزل دهید یا غیرفعال کنید",
+                        },
+                    });
+                }
+            }
+            const dataToUpdate = {
+                name,
+                email,
+                role,
+                isActive,
+            };
+            let newTokenVersion = null;
             if (password && password.trim() !== "") {
                 dataToUpdate.passwordHash = await bcryptjs_1.default.hash(password, 10);
+                // 👇 نشست‌های قبلی کاربر با تغییر رمز باطل می‌شوند
+                dataToUpdate.tokenVersion = { increment: 1 };
+                newTokenVersion = target.tokenVersion + 1;
             }
             const user = await prisma_1.prisma.adminUser.update({
                 where: { id },
@@ -135,6 +171,11 @@ class AuthAdminController {
                     isActive: true,
                 },
             });
+            // اگر ادمین رمز خودش را عوض کرده، نشست فعلی را با توکن جدید ادامه می‌دهیم
+            if (newTokenVersion !== null && req.user?.userId === id) {
+                const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role, tokenVersion: newTokenVersion }, env_1.config.jwtSecret, { expiresIn: "1d" });
+                (0, auth_cookie_1.setAuthCookie)(res, token);
+            }
             res.json({ success: true, data: user });
         }
         catch (error) {
@@ -146,7 +187,7 @@ class AuthAdminController {
                     error: { message: "این ایمیل قبلاً برای کاربر دیگری ثبت شده است" },
                 });
             }
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -170,9 +211,9 @@ class AuthAdminController {
                 });
             }
             // ۳. جلوگیری از حذف آخرین SUPER_ADMIN
-            if (user.role === "SUPER_ADMIN") {
+            if (user.role === "SUPER_ADMIN" && user.isActive) {
                 const superAdminCount = await prisma_1.prisma.adminUser.count({
-                    where: { role: "SUPER_ADMIN" },
+                    where: { role: "SUPER_ADMIN", isActive: true },
                 });
                 if (superAdminCount <= 1) {
                     return res.status(400).json({
@@ -186,7 +227,7 @@ class AuthAdminController {
             res.json({ success: true, message: "کاربر با موفقیت حذف شد" });
         }
         catch (error) {
-            const message = error instanceof Error ? error.message : "خطای ناشناخته";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطای ناشناخته");
             res.status(500).json({ success: false, error: { message } });
         }
     }
@@ -198,16 +239,45 @@ class AuthAdminController {
                 return res
                     .status(401)
                     .json({ success: false, error: { message: "دسترسی غیرمجاز" } });
-            const { name, email, password } = validators_1.profileUpdateSchema.parse(req.body);
+            const { name, email, password, currentPassword } = validators_1.profileUpdateSchema.parse(req.body);
+            const currentUser = await prisma_1.prisma.adminUser.findUnique({
+                where: { id: userId },
+            });
+            if (!currentUser) {
+                return res
+                    .status(404)
+                    .json({ success: false, error: { message: "کاربر یافت نشد" } });
+            }
             const data = { name, email };
+            let newTokenVersion = null;
             if (password && password.trim() !== "") {
+                // 👇 تغییر رمز بدون دانستن رمز فعلی مجاز نیست
+                if (!currentPassword) {
+                    return res.status(400).json({
+                        success: false,
+                        error: { message: "برای تغییر رمز، رمز عبور فعلی الزامی است" },
+                    });
+                }
+                const isCurrentPasswordValid = await bcryptjs_1.default.compare(currentPassword, currentUser.passwordHash);
+                if (!isCurrentPasswordValid) {
+                    return res.status(400).json({
+                        success: false,
+                        error: { message: "رمز عبور فعلی اشتباه است" },
+                    });
+                }
                 data.passwordHash = await bcryptjs_1.default.hash(password, 10);
+                data.tokenVersion = { increment: 1 };
+                newTokenVersion = currentUser.tokenVersion + 1;
             }
             const user = await prisma_1.prisma.adminUser.update({
                 where: { id: userId },
                 data,
                 select: { id: true, name: true, email: true, role: true },
             });
+            if (newTokenVersion !== null) {
+                const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role, tokenVersion: newTokenVersion }, env_1.config.jwtSecret, { expiresIn: "1d" });
+                (0, auth_cookie_1.setAuthCookie)(res, token);
+            }
             res.json({ success: true, data: user });
         }
         catch (error) {
@@ -219,7 +289,7 @@ class AuthAdminController {
                     error: { message: "این ایمیل قبلاً برای کاربر دیگری ثبت شده است" },
                 });
             }
-            const message = error instanceof Error ? error.message : "خطا در ویرایش";
+            const message = (0, error_message_1.publicErrorMessage)(error, "خطا در ویرایش");
             res.status(500).json({ success: false, error: { message } });
         }
     }

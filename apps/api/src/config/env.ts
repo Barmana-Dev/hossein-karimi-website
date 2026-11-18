@@ -77,6 +77,10 @@ if (isProduction && corsOrigins.every((origin) => origin.includes("localhost")))
   fail("در پروداکشن CORS_ORIGINS نباید به localhost اشاره کند.");
 }
 
+// 👇 وقتی وب و API روی دو زیردامنه هستند (مثلاً site.com و api.site.com)
+// کوکی باید روی دامنهٔ والد تنظیم شود تا Proxy وب آن را ببیند.
+const cookieDomain = (process.env.COOKIE_DOMAIN || "").trim() || undefined;
+
 const uploadsDir = path.resolve(
   process.cwd(),
   process.env.UPLOADS_DIR || "uploads",
@@ -115,6 +119,7 @@ export const config = {
   enableSwagger:
     process.env.ENABLE_SWAGGER === "true" || !isProduction,
   cookieSecure: isProduction,
+  cookieDomain,
   // آدرس وب‌هوک خطا (اختیاری) برای مانیتورینگ متمرکز
   errorWebhookUrl: (process.env.ERROR_WEBHOOK_URL || "").trim(),
 } as const;

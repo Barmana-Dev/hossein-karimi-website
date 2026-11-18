@@ -12,10 +12,28 @@ class ArticleNotFoundError extends Error {
 exports.ArticleNotFoundError = ArticleNotFoundError;
 class ArticlesService {
     // دریافت مقالات برای سایت عمومی
+    // 👇 متن کامل مقاله (body) در فهرست‌ها لازم نیست؛ ارسال آن حجم پاسخ
+    // صفحهٔ اصلی و فهرست مقالات را چند برابر می‌کرد.
     async getPublishedArticles() {
         return prisma_1.prisma.article.findMany({
             where: { status: "published" },
             orderBy: { publishedAt: "desc" },
+            select: {
+                id: true,
+                slug: true,
+                title: true,
+                excerpt: true,
+                authorName: true,
+                category: true,
+                readTime: true,
+                status: true,
+                coverImage: true,
+                metaTitle: true,
+                metaDescription: true,
+                publishedAt: true,
+                createdAt: true,
+                updatedAt: true,
+            },
         });
     }
     async getArticleBySlug(slug) {
@@ -79,13 +97,18 @@ class ArticlesService {
         });
         if (!existing)
             throw new ArticleNotFoundError();
-        // 👇 تاریخ انتشار فقط در اولین انتشار ست می‌شود و با هر ویرایش عوض نمی‌شود
-        const publishedAt = data.publishedAt !== undefined
+        // 👇 تاریخ انتشار فقط در اولین انتشار ست می‌شود و با هر ویرایش عوض نمی‌شود.
+        // فرم ویرایش برای مقالهٔ draft مقدار null می‌فرستد؛ در این حالت باید
+        // تاریخ انتشار خودکار تنظیم شود، نه اینکه null ذخیره شود.
+        const publishingNow = data.status === "published" && !existing.publishedAt;
+        const publishedAt = publishingNow
             ? data.publishedAt
                 ? new Date(data.publishedAt)
-                : null
-            : data.status === "published" && !existing.publishedAt
-                ? new Date()
+                : new Date()
+            : data.publishedAt !== undefined
+                ? data.publishedAt
+                    ? new Date(data.publishedAt)
+                    : null
                 : undefined;
         return prisma_1.prisma.article.update({
             where: { id },

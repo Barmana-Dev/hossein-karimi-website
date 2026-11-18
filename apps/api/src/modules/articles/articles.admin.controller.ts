@@ -1,3 +1,4 @@
+import { publicErrorMessage } from "../../lib/error-message";
 import { Response } from "express";
 import { ArticlesService, ArticleNotFoundError } from "./articles.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
@@ -30,7 +31,7 @@ export class ArticlesAdminController {
           : undefined,
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
+      const message = publicErrorMessage(error, "خطای ناشناخته");
       res.status(500).json({ success: false, error: { message } });
     }
   }
@@ -59,7 +60,7 @@ export class ArticlesAdminController {
           });
         }
       }
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
+      const message = publicErrorMessage(error, "خطای ناشناخته");
       res.status(500).json({ success: false, error: { message } });
     }
   }
@@ -74,7 +75,7 @@ export class ArticlesAdminController {
           .json({ success: false, error: { message: "مقاله یافت نشد" } });
       res.json({ success: true, data: article });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
+      const message = publicErrorMessage(error, "خطای ناشناخته");
       res.status(500).json({ success: false, error: { message } });
     }
   }
@@ -120,7 +121,7 @@ export class ArticlesAdminController {
           error: { message: "مقاله یافت نشد" },
         });
       }
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
+      const message = publicErrorMessage(error, "خطای ناشناخته");
       res.status(500).json({ success: false, error: { message } });
     }
   }
@@ -140,7 +141,7 @@ export class ArticlesAdminController {
           error: { message: "مقاله یافت نشد" },
         });
       }
-      const message = error instanceof Error ? error.message : "خطای ناشناخته";
+      const message = publicErrorMessage(error, "خطای ناشناخته");
       res.status(500).json({ success: false, error: { message } });
     }
   }

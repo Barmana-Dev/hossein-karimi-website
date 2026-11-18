@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ExperienceController = void 0;
+const error_message_1 = require("../../lib/error-message");
 const experience_service_1 = require("./experience.service");
 const pagination_1 = require("../../lib/pagination");
 const client_1 = require("../../generated/prisma/client");
@@ -18,7 +19,7 @@ class ExperienceController {
         catch (error) {
             res.status(500).json({
                 success: false,
-                error: { message: error instanceof Error ? error.message : "خطا" },
+                error: { message: (0, error_message_1.publicErrorMessage)(error, "خطا") },
             });
         }
     }
