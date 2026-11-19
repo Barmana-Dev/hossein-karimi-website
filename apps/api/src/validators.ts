@@ -10,7 +10,11 @@ const slugField = z
   .regex(
     /^[^\/\\?#%\s]+$/,
     "اسلاگ نمی‌تواند شامل / ، ? ، # ، % یا فاصله باشد",
-  );
+  )
+  // 👇 "." و ".." در نرمال‌سازی URL به مسیر جاری/والد تبدیل می‌شوند و لینک مقاله را می‌شکنند
+  .refine((value) => !/^\.+$/.test(value), {
+    message: "اسلاگ نمی‌تواند فقط از نقطه تشکیل شود",
+  });
 
 // ===== Experience =====
 // 👇 فقط آدرس http/https یا مقدار خالی/تهی پذیرفته می‌شود (جلوگیری از javascript:)
@@ -102,8 +106,9 @@ export const mediaCreateSchema = z.object({
   }),
   title: z.string().min(1, "عنوان الزامی است").max(200),
   description: z.string().nullable().optional(),
-  sourceUrl: z.string().nullable().optional(),
-  image: z.string().nullable().optional(),
+  // 👇 آدرس منبع روی سایت عمومی به‌صورت لینک رندر می‌شود؛ فقط http/https مجاز است
+  sourceUrl: optionalExternalUrl,
+  image: z.string().max(500).nullable().optional(),
   happenedAt: z.string().datetime().nullable().optional(),
   status: z.enum(["published", "draft"], { message: "وضعیت نامعتبر است" }),
 });

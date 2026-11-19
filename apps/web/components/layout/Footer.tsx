@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Mail, Phone, MapPin, SendHorizontal } from "lucide-react";
-import { API_URL } from "@/lib/api";
+import { API_URL, safeExternalUrl } from "@/lib/api";
 import { SITE_NAME, SITE_SUBTITLE } from "@/lib/constants";
 import logo from "../../../../public/images/logo.webp";
 import Image from "next/image";
@@ -132,9 +132,9 @@ export function Footer() {
 
             {/* شبکه‌های اجتماعی */}
             <div className="flex items-center gap-2.5 mt-4">
-              {settings?.instagramUrl && (
+              {safeExternalUrl(settings?.instagramUrl) && (
                 <a
-                  href={settings.instagramUrl}
+                  href={safeExternalUrl(settings?.instagramUrl) ?? undefined}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-white/70 hover:bg-accent hover:text-white hover:border-accent transition-all duration-300"
@@ -143,9 +143,9 @@ export function Footer() {
                   IG
                 </a>
               )}
-              {settings?.linkedinUrl && (
+              {safeExternalUrl(settings?.linkedinUrl) && (
                 <a
-                  href={settings.linkedinUrl}
+                  href={safeExternalUrl(settings?.linkedinUrl) ?? undefined}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-white/70 hover:bg-accent hover:text-white hover:border-accent transition-all duration-300"
@@ -154,9 +154,9 @@ export function Footer() {
                   IN
                 </a>
               )}
-              {settings?.telegramUrl && (
+              {safeExternalUrl(settings?.telegramUrl) && (
                 <a
-                  href={settings.telegramUrl}
+                  href={safeExternalUrl(settings?.telegramUrl) ?? undefined}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/70 hover:bg-accent hover:text-white hover:border-accent transition-all duration-300"

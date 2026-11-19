@@ -21,7 +21,9 @@ export class ExperienceService {
     });
   }
   async getExperienceBySlug(slug: string) {
-    return prisma.experience.findUnique({
+    // 👇 findUnique فقط فیلدهای یونیک می‌پذیرد؛ ارسال status باعث خطای اعتبارسنجی
+    // Prisma و در نتیجه پاسخ ۵۰۰ (به‌جای ۴۰۴) می‌شد.
+    return prisma.experience.findFirst({
       where: { slug, status: "published" },
     });
   }

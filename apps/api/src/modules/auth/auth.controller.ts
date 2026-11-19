@@ -11,7 +11,13 @@ import { publicErrorMessage } from "../../lib/error-message";
 const authService = new AuthService();
 
 const loginSchema = z.object({
-  email: z.string().email("ایمیل نامعتبر است"),
+  // 👇 ایمیل کاربران هنگام ساخت با حروف کوچک ذخیره می‌شود؛ ورودی ورود هم
+  // باید نرمال شود تا ورود با Admin@Example.com هم کار کند.
+  email: z
+    .string()
+    .trim()
+    .email("ایمیل نامعتبر است")
+    .transform((value) => value.toLowerCase()),
   password: z.string().min(6, "رمز عبور باید حداقل ۶ کاراکتر باشد"),
 });
 
@@ -65,10 +71,14 @@ export class AuthController {
       try {
         const decoded = jwt.verify(token, config.jwtSecret) as {
           userId?: string;
+          tokenVersion?: number;
         };
         if (decoded.userId) {
-          await prisma.adminUser.update({
-            where: { id: decoded.userId },
+          const tokenVersion = decoded.tokenVersion ?? 0;
+          // 👇 فقط توکنی که هنوز نسخهٔ جاری حساب را دارد باطل می‌شود؛
+          // در غیر این صورت خروج با توکن قدیمی، نشست معتبر جدید را قطع می‌کرد.
+          await prisma.adminUser.updateMany({
+            where: { id: decoded.userId, tokenVersion },
             data: { tokenVersion: { increment: 1 } },
           });
         }

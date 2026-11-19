@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
+import { isValidPhone, normalizePhoneDigits } from "../src/lib/phone";
 import {
   settingsUpdateSchema,
   inquiryUpdateSchema,
@@ -99,6 +100,40 @@ test("articleCreateSchema الزامات پایه و وضعیت‌های مجا�
     articleCreateSchema.safeParse({ ...base, publishedAt: "2026-01-01T00:00:00.000Z" }).success,
     true,
   );
+});
+
+test("articleCreateSchema اسلاگ نقطه‌ای را رد می‌کند", () => {
+  const base = {
+    slug: "ar-16",
+    title: "عنوان",
+    excerpt: "خلاصه",
+    body: "متن",
+    category: "حقوقی",
+    readTime: 5,
+    status: "published",
+  };
+  assert.equal(articleCreateSchema.safeParse({ ...base, slug: "." }).success, false);
+  assert.equal(articleCreateSchema.safeParse({ ...base, slug: ".." }).success, false);
+  assert.equal(articleCreateSchema.safeParse({ ...base, slug: "..." }).success, false);
+  assert.equal(
+    articleCreateSchema.safeParse({ ...base, slug: "article-123" }).success,
+    true,
+  );
+  assert.equal(
+    articleCreateSchema.safeParse({ ...base, slug: "../etc" }).success,
+    false,
+  );
+});
+
+test("شماره تماس فارسی، عربی و لاتین یکسان پذیرفته و رشتهٔ بدون رقم رد می‌شود", () => {
+  assert.equal(isValidPhone("۰۹۱۲۳۴۵۶۷۸۹"), true);
+  assert.equal(isValidPhone("٠٩١٢٣٤٥٦٧٨٩"), true);
+  assert.equal(isValidPhone("09123456789"), true);
+  assert.equal(isValidPhone("+989123456789"), true);
+  assert.equal(isValidPhone("+++++++"), false);
+  assert.equal(isValidPhone("-------"), false);
+  assert.equal(isValidPhone("12345"), false);
+  assert.equal(normalizePhoneDigits("۰۹۱۲۳۴۵۶۷۸۹"), "09123456789");
 });
 
 test("agencyCreateSchema آدرس وب‌سایت خطرناک را رد می‌کند", () => {

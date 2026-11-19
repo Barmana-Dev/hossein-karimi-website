@@ -42,33 +42,52 @@ function detectImageType(filePath: string): DetectedImage | null {
   return null;
 }
 
-// 👇 GIF باید ساختار پایه داشته باشد (ابعاد معتبر و بایت پایان بخش)
-function isValidGif(filePath: string): boolean {
-  try {
-    const stats = fs.statSync(filePath);
-    if (stats.size < 14) return false;
+// 👇 سقف‌های ایمنی تصویر: ابعاد بیش از حد و تعداد فریم غیرمعقول رد می‌شود
+const MAX_IMAGE_DIMENSION = 8000;
+const MAX_IMAGE_FRAMES = 600;
 
-    const fd = fs.openSync(filePath, "r");
-    const header = Buffer.alloc(13);
-    fs.readSync(fd, header, 0, 13, 0);
-    const trailer = Buffer.alloc(1);
-    fs.readSync(fd, trailer, 0, 1, stats.size - 1);
-    fs.closeSync(fd);
+// 👇 فرمت گزارش‌شده توسط sharp برای هر MIME شناسایی‌شده
+const SHARP_FORMAT_BY_MIME: Record<string, string> = {
+  "image/jpeg": "jpeg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+};
 
-    const width = header.readUInt16LE(6);
-    const height = header.readUInt16LE(8);
-    return width > 0 && height > 0 && trailer[0] === 0x3b;
-  } catch {
-    return false;
-  }
-}
-
-// 👇 سلامت ساختار تصویر (فرمت‌های غیر GIF) با رمزگشای sharp بررسی می‌شود
-async function isDecodableImage(filePath: string): Promise<boolean> {
+// 👇 اعتبارسنجی واقعی با رمزگشا: امضا/ابعاد/بایت پایان کافی نیستند؛
+// فایلی مثل GIF چهارده‌بایتی هیچ فریمی ندارد و باید پیش از ثبت Asset رد شود.
+async function isDecodableImage(
+  filePath: string,
+  mime: string,
+): Promise<boolean> {
   try {
     const { default: sharp } = await import("sharp");
-    const metadata = await sharp(filePath).metadata();
-    return Boolean(metadata.width && metadata.height && metadata.format);
+    const animated = mime === "image/gif" || mime === "image/webp";
+    const image = sharp(filePath, {
+      animated,
+      failOn: "error",
+      limitInputPixels: MAX_IMAGE_DIMENSION * MAX_IMAGE_DIMENSION,
+    });
+
+    const metadata = await image.metadata();
+    const expectedFormat = SHARP_FORMAT_BY_MIME[mime];
+    if (!expectedFormat || metadata.format !== expectedFormat) return false;
+    if (!metadata.width || !metadata.height) return false;
+    if (
+      metadata.width > MAX_IMAGE_DIMENSION ||
+      metadata.height > MAX_IMAGE_DIMENSION
+    ) {
+      return false;
+    }
+
+    const frames = metadata.pages ?? 1;
+    if (!Number.isInteger(frames) || frames < 1 || frames > MAX_IMAGE_FRAMES) {
+      return false;
+    }
+
+    // 👇 رمزگشایی کامل پیکسل‌ها؛ فایل بدون فریم اینجا خطا می‌دهد
+    await sharp(filePath, { animated, failOn: "error" }).toBuffer();
+    return true;
   } catch {
     return false;
   }
@@ -87,11 +106,10 @@ export class MediaController {
 
       // 👇 نوع فایل از روی محتوای واقعی آن بررسی می‌شود، نه فقط هدر MIME
       const detected = detectImageType(req.file.path);
-      // 👇 امضای فایل کافی نیست؛ ساختار تصویر هم باید قابل رمزگشایی باشد
+      // 👇 امضای فایل کافی نیست؛ تصویر باید واقعاً قابل رمزگشایی باشد
+      // (همهٔ فرمت‌ها، از جمله GIF، با sharp بررسی می‌شوند)
       const structurallyValid = detected
-        ? detected.mime === "image/gif"
-          ? isValidGif(req.file.path)
-          : await isDecodableImage(req.file.path)
+        ? await isDecodableImage(req.file.path, detected.mime)
         : false;
 
       if (!detected || detected.mime !== req.file.mimetype || !structurallyValid) {

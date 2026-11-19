@@ -13,9 +13,11 @@
   --color-accent-dark: #a07b45;
 
   --color-text: #17212c;
-  --color-text-muted: #6b7684;
+  /* 👇 #6b7684 روی پس‌زمینهٔ #f5f6f8 نسبت ۴٫۲۹:۱ داشت و حد AA (۴٫۵:۱) را رد
+     می‌کرد؛ این مقدار در همهٔ ترکیب‌ها دست‌کم ۵:۱ است */
+  --color-text-muted: #5f6a77;
   /* 👇 کلاس‌های text-foreground-muted در کامپوننت‌ها از این توکن استفاده می‌کنند */
-  --color-foreground-muted: #6b7684;
+  --color-foreground-muted: #5f6a77;
 
   --color-surface: #ffffff;
   --color-background: #f5f6f8;

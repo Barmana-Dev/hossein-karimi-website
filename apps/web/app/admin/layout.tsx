@@ -132,6 +132,9 @@ export default function AdminLayout({
   const profileRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeMenuButtonRef = useRef<HTMLButtonElement>(null);
 
   // ۱. دریافت اطلاعات کاربر
   useEffect(() => {
@@ -238,6 +241,56 @@ export default function AdminLayout({
     };
   }, [isMobileOpen]);
 
+  // 👇 کشوی مدیریت موبایل باید فوکوس را در خود نگه دارد، زمینه را غیرفعال
+  // نگه دارد و پس از بستن، فوکوس را به دکمهٔ بازکننده برگرداند
+  useEffect(() => {
+    if (!isMobileOpen) return;
+    const sidebar = sidebarRef.current;
+    if (!sidebar) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const menuButton = menuButtonRef.current;
+    const getFocusable = () =>
+      Array.from(
+        sidebar.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+
+    if (closeMenuButtonRef.current) closeMenuButtonRef.current.focus();
+    else getFocusable()[0]?.focus();
+
+    const handleTab = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const items = getFocusable();
+      if (items.length === 0) return;
+
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (!active || !sidebar.contains(active)) {
+        event.preventDefault();
+        first.focus();
+        return;
+      }
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleTab);
+    return () => {
+      document.removeEventListener("keydown", handleTab);
+      const target = previouslyFocused ?? menuButton;
+      target?.focus?.();
+    };
+  }, [isMobileOpen]);
+
   // ۴. بستن منوها با کلیک بیرون
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -269,9 +322,12 @@ export default function AdminLayout({
     const searchTimer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const res = await fetch(`${API_URL}/admin/search?q=${query}`, {
-          credentials: "include",
-        });
+        // 👇 عبارت جستجو باید encode شود؛ کاراکترهایی مثل & و # در URL
+        // باعث می‌شدند درخواست یا نتیجه خراب شود
+        const res = await fetch(
+          `${API_URL}/admin/search?q=${encodeURIComponent(query)}`,
+          { credentials: "include" },
+        );
         if (res.ok) {
           const json = await res.json();
           setSearchResults(json.data);
@@ -333,6 +389,7 @@ export default function AdminLayout({
       <div className="min-h-screen bg-[#F4F7F9] flex" dir="rtl">
         {/* ====== SIDEBAR ====== */}
         <aside
+          ref={sidebarRef}
           // 👇 در موبایلِ بسته، لینک‌های سایدبار نباید فوکوس کیبورد بگیرند
           inert={!isDesktop && !isMobileOpen}
           aria-hidden={!isDesktop && !isMobileOpen}
@@ -375,6 +432,7 @@ export default function AdminLayout({
               )}
             </Link>
             <button
+              ref={closeMenuButtonRef}
               onClick={() => setIsMobileOpen(false)}
               aria-label="بستن منوی مدیریت"
               className="lg:hidden text-white/50 hover:text-white absolute left-4"
@@ -445,6 +503,7 @@ export default function AdminLayout({
           <header className="h-20 bg-white border-b border-border flex items-center justify-between px-6 sticky top-0 z-40">
             <div className="flex items-center gap-4">
               <button
+                ref={menuButtonRef}
                 onClick={() => setIsMobileOpen(true)}
                 aria-label="باز کردن منوی مدیریت"
                 className="lg:hidden text-primary"
@@ -571,7 +630,9 @@ export default function AdminLayout({
                 </button>
 
                 {isNotificationsOpen && (
-                  <div className="absolute right-0 top-12 w-[320px] max-w-[calc(100vw-1.5rem)] bg-white border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
+                  // 👇 در موبایل پنجره به لبه‌های viewport قفل می‌شود تا در عرض‌های
+                  // ۳۲۰ و ۳۷۵ پیکسل هم هیچ بخشی از آن بریده نشود
+                  <div className="fixed inset-x-4 top-[5.5rem] w-auto sm:absolute sm:inset-x-auto sm:left-0 sm:top-12 sm:w-[320px] sm:max-w-[calc(100vw-1.5rem)] bg-white border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
                     <div className="p-4 border-b border-border bg-background/50 flex justify-between items-center">
                       <h3 className="font-bold text-primary text-sm">
                         درخواست‌های جدید

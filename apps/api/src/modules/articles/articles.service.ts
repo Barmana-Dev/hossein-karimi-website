@@ -9,12 +9,25 @@ export class ArticleNotFoundError extends Error {
   }
 }
 
+// 👇 اسلاگ‌هایی که به‌عنوان segment مسیر URL قابل استفاده نیستند
+// (مثل "." و ".." که مرورگر آن‌ها را نرمال می‌کند)
+export function isPublicPathSlug(slug: string) {
+  return Boolean(slug) && !/^\.+$/.test(slug) && !/[\/\\?#%\s]/.test(slug);
+}
+
+// 👇 برای رکوردهای قدیمی با اسلاگ نامعتبر، یک مسیر امن بر اساس شناسه ساخته می‌شود
+function publicArticleSlug(article: { id: string; slug: string }) {
+  return isPublicPathSlug(article.slug)
+    ? article.slug
+    : `article-${article.id}`;
+}
+
 export class ArticlesService {
   // دریافت مقالات برای سایت عمومی
   // 👇 متن کامل مقاله (body) در فهرست‌ها لازم نیست؛ ارسال آن حجم پاسخ
   // صفحهٔ اصلی و فهرست مقالات را چند برابر می‌کرد.
   async getPublishedArticles() {
-    return prisma.article.findMany({
+    const articles = await prisma.article.findMany({
       where: { status: "published" },
       orderBy: { publishedAt: "desc" },
       select: {
@@ -34,13 +47,29 @@ export class ArticlesService {
         updatedAt: true,
       },
     });
+
+    return articles.map((article) => ({
+      ...article,
+      slug: publicArticleSlug(article),
+    }));
   }
 
   async getArticleBySlug(slug: string) {
     // findFirst چون وضعیت هم شرط دارد (findUnique فقط کلید یکتا می‌پذیرد)
-    return prisma.article.findFirst({
+    const article = await prisma.article.findFirst({
       where: { slug, status: "published" },
     });
+    if (article) return article;
+
+    // 👇 رکوردهای قدیمی که اسلاگ نامعتبر دارند با «article-<id>» منتشر می‌شوند
+    const legacyId = /^article-([0-9a-fA-F-]{36})$/.exec(slug)?.[1];
+    if (!legacyId) return null;
+
+    const legacy = await prisma.article.findUnique({ where: { id: legacyId } });
+    if (!legacy || legacy.status !== "published") return null;
+    // اگر خود اسلاگ معتبر است، مسیر article-<id> نباید جایگزین آن شود
+    if (isPublicPathSlug(legacy.slug)) return null;
+    return legacy;
   }
 
   // دریافت مقالات برای پنل ادمین (شامل پیش‌نویس‌ها)

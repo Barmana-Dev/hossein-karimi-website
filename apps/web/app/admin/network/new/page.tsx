@@ -150,11 +150,14 @@ export default function NewAgencyPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-bold text-primary">توضیحات</label>
+            <label className="text-xs font-bold text-primary">
+              توضیحات <span className="text-red-500">*</span>
+            </label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
+              required
               rows={3}
               className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:outline-none resize-none"
               placeholder="معرفی مختصر مجموعه..."

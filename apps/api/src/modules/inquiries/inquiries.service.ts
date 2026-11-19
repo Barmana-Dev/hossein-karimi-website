@@ -1,15 +1,17 @@
 import { prisma } from "../../config/prisma";
 import { z } from "zod";
+import { isValidPhone, normalizePhoneDigits } from "../../lib/phone";
 
 const phoneField = z
   .string()
   .trim()
   .max(30, "شماره تماس بیش از حد طولانی است")
-  .optional()
-  .or(z.literal(""))
-  .refine((value) => !value || /^[+0-9()\-\s]{7,30}$/.test(value), {
+  // 👇 ارقام فارسی/عربی نرمال می‌شوند و ساختار شماره واقعی بررسی می‌شود
+  .transform(normalizePhoneDigits)
+  .refine((value) => value === "" || isValidPhone(value), {
     message: "شماره تماس معتبر نیست",
-  });
+  })
+  .optional();
 
 export const inquirySchema = z
   .object({

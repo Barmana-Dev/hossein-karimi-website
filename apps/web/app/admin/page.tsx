@@ -106,20 +106,22 @@ export default function AdminDashboard() {
       }
 
       // 👇 حذف از state (بدون نیاز به refresh)
-      setStats((prev) =>
-        prev
-          ? {
-              ...prev,
-              inquiries: {
-                ...prev.inquiries,
-                recent: prev.inquiries.recent.filter(
-                  (i) => i.id !== deletingId,
-                ),
-                new: Math.max(0, prev.inquiries.new - 1),
-              },
-            }
-          : prev,
-      );
+      setStats((prev) => {
+        if (!prev) return prev;
+        const removed = prev.inquiries.recent.find((i) => i.id === deletingId);
+        return {
+          ...prev,
+          inquiries: {
+            ...prev.inquiries,
+            recent: prev.inquiries.recent.filter((i) => i.id !== deletingId),
+            // شمارنده فقط وقتی کم می‌شود که درخواست حذف‌شده واقعاً «جدید» بوده باشد
+            new:
+              removed?.status === "new"
+                ? Math.max(0, prev.inquiries.new - 1)
+                : prev.inquiries.new,
+          },
+        };
+      });
       setDeletingId(null);
     } catch {
       setDeleteError("خطای شبکه در حذف درخواست");

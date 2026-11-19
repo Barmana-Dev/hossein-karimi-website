@@ -95,9 +95,10 @@ export default function NewArticlePage() {
         <div className="flex items-center gap-4">
           <Link
             href="/admin/articles"
+            aria-label="بازگشت به فهرست مقالات"
             className="w-10 h-10 rounded-xl bg-white border border-border flex items-center justify-center text-foreground-muted hover:text-primary transition-colors"
           >
-            <ArrowRight size={18} />
+            <ArrowRight size={18} aria-hidden="true" />
           </Link>
           <div>
             <h1 className="text-2xl font-black text-primary mb-1">
@@ -184,12 +185,13 @@ export default function NewArticlePage() {
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-primary">
-                    خلاصه (Excerpt)
+                    خلاصه (Excerpt) <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     name="excerpt"
                     value={formData.excerpt}
                     onChange={handleChange}
+                    required
                     rows={2}
                     placeholder="توضیح کوتاه..."
                     className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent resize-none"

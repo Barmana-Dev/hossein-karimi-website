@@ -165,9 +165,11 @@ export function EditUserModal({ userId, onClose, onSuccess }: Props) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-user-title"
-        className="bg-white rounded-2xl w-full max-w-[500px] shadow-2xl animate-in zoom-in-95 duration-200"
+        // 👇 ارتفاع مودال به viewport محدود می‌شود و بدنهٔ فرم اسکرول داخلی
+        // می‌گیرد تا سربرگ و دکمه‌های ذخیره/انصراف همیشه در دید باشند
+        className="bg-white rounded-2xl w-full max-w-[500px] max-h-[calc(100dvh-2rem)] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200"
       >
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className="flex items-center justify-between p-6 border-b border-border shrink-0">
           <h2 id="edit-user-title" className="text-lg font-bold text-primary">
             ویرایش کاربر
           </h2>
@@ -186,8 +188,8 @@ export function EditUserModal({ userId, onClose, onSuccess }: Props) {
             <Loader2 className="animate-spin text-accent" size={32} />
           </div>
         ) : (
-          <form onSubmit={handleSubmit}>
-            <div className="p-6 space-y-5">
+          <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
+            <div className="p-6 space-y-5 overflow-y-auto min-h-0 flex-1">
               {error && (
                 <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg flex items-center gap-2">
                   <AlertCircle size={16} />
@@ -265,7 +267,7 @@ export function EditUserModal({ userId, onClose, onSuccess }: Props) {
               </div>
             </div>
 
-            <div className="p-6 border-t border-border flex justify-end gap-3 bg-background rounded-b-2xl">
+            <div className="p-6 border-t border-border flex justify-end gap-3 bg-background rounded-b-2xl shrink-0">
               <Button type="button" variant="outline" onClick={onClose}>
                 انصراف
               </Button>

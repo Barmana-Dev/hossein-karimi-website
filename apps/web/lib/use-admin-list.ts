@@ -52,6 +52,9 @@ export function useAdminList<T>(
     let cancelled = false;
 
     const run = async () => {
+      // 👇 با تغییر صفحه/جستجو هم حالت بارگذاری فعال می‌شود؛ در غیر این صورت
+      // فهرست قدیمی بدون هیچ نشانه‌ای نمایش داده می‌شد.
+      setIsLoading(true);
       const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),

@@ -35,6 +35,36 @@ function isUniqueViolation(error: unknown) {
   );
 }
 
+// 👇 قفل مشورتی سطح تراکنش برای تغییرهای نقش/فعالیت کاربران ادمین.
+// شمارش «سوپرادمین‌های فعال» و تغییر نقش باید اتمیک باشند؛ در غیر این صورت دو
+// درخواست هم‌زمان می‌توانند هر دو شمارش ۲ را ببینند و هر دو تنزل را انجام دهند.
+const ACTIVE_SUPER_ADMIN_LOCK_KEY = 778211001;
+
+async function withSuperAdminLock<T>(
+  handler: (tx: Prisma.TransactionClient) => Promise<T>,
+): Promise<T> {
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRawUnsafe(
+      `SELECT pg_advisory_xact_lock(${ACTIVE_SUPER_ADMIN_LOCK_KEY}::bigint)`,
+    );
+    return handler(tx);
+  });
+}
+
+// 👇 بررسی می‌کند که آیا تغییر درخواستی، این کاربر را از فهرست
+// سوپرادمین‌های فعال خارج می‌کند یا نه
+function removesActiveSuperAdmin(target: {
+  role: string;
+  isActive: boolean;
+}, changes: { role?: string; isActive?: boolean }) {
+  return (
+    target.role === "SUPER_ADMIN" &&
+    target.isActive &&
+    ((changes.role !== undefined && changes.role !== "SUPER_ADMIN") ||
+      changes.isActive === false)
+  );
+}
+
 export class AuthAdminController {
   // دریافت لیست کاربران
   async getAllUsers(req: AuthRequest, res: Response) {
@@ -135,60 +165,71 @@ export class AuthAdminController {
       const { name, email, role, isActive, password } =
         adminUserUpdateSchema.parse(req.body);
 
-      const target = await prisma.adminUser.findUnique({ where: { id } });
-      if (!target) {
+      // 👇 هش کردن رمز (کند) خارج از تراکنش انجام می‌شود تا قفل طولانی نشود
+      const passwordHash =
+        password && password.trim() !== ""
+          ? await bcrypt.hash(password, 10)
+          : null;
+
+      const outcome = await withSuperAdminLock(async (tx) => {
+        const target = await tx.adminUser.findUnique({ where: { id } });
+        if (!target) return { status: 404 as const };
+
+        // 👇 آخرین SUPER_ADMIN فعال نباید تنزل یا غیرفعال شود
+        if (removesActiveSuperAdmin(target, { role, isActive })) {
+          const activeSuperAdmins = await tx.adminUser.count({
+            where: { role: "SUPER_ADMIN", isActive: true },
+          });
+          if (activeSuperAdmins <= 1) return { status: 400 as const };
+        }
+
+        const dataToUpdate: Prisma.AdminUserUpdateInput = {
+          name,
+          email,
+          role,
+          isActive,
+        };
+
+        let newTokenVersion: number | null = null;
+        if (passwordHash) {
+          dataToUpdate.passwordHash = passwordHash;
+          // 👇 نشست‌های قبلی کاربر با تغییر رمز باطل می‌شوند
+          dataToUpdate.tokenVersion = { increment: 1 };
+          newTokenVersion = target.tokenVersion + 1;
+        }
+
+        const user = await tx.adminUser.update({
+          where: { id },
+          data: dataToUpdate,
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            isActive: true,
+          },
+        });
+
+        return { status: 200 as const, user, newTokenVersion };
+      });
+
+      if (outcome.status === 404) {
         return res
           .status(404)
           .json({ success: false, error: { message: "کاربر یافت نشد" } });
       }
 
-      // 👇 آخرین SUPER_ADMIN فعال نباید تنزل یا غیرفعال شود
-      const removesActiveSuperAdmin =
-        target.role === "SUPER_ADMIN" &&
-        target.isActive &&
-        ((role !== undefined && role !== "SUPER_ADMIN") || isActive === false);
-
-      if (removesActiveSuperAdmin) {
-        const activeSuperAdmins = await prisma.adminUser.count({
-          where: { role: "SUPER_ADMIN", isActive: true },
+      if (outcome.status === 400) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            message:
+              "نمی‌توانید آخرین سوپر ادمین فعال را تنزل دهید یا غیرفعال کنید",
+          },
         });
-        if (activeSuperAdmins <= 1) {
-          return res.status(400).json({
-            success: false,
-            error: {
-              message:
-                "نمی‌توانید آخرین سوپر ادمین فعال را تنزل دهید یا غیرفعال کنید",
-            },
-          });
-        }
       }
 
-      const dataToUpdate: Prisma.AdminUserUpdateInput = {
-        name,
-        email,
-        role,
-        isActive,
-      };
-
-      let newTokenVersion: number | null = null;
-      if (password && password.trim() !== "") {
-        dataToUpdate.passwordHash = await bcrypt.hash(password, 10);
-        // 👇 نشست‌های قبلی کاربر با تغییر رمز باطل می‌شوند
-        dataToUpdate.tokenVersion = { increment: 1 };
-        newTokenVersion = target.tokenVersion + 1;
-      }
-
-      const user = await prisma.adminUser.update({
-        where: { id },
-        data: dataToUpdate,
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          isActive: true,
-        },
-      });
+      const { user, newTokenVersion } = outcome;
 
       // اگر ادمین رمز خودش را عوض کرده، نشست فعلی را با توکن جدید ادامه می‌دهیم
       if (newTokenVersion !== null && req.user?.userId === id) {
@@ -227,31 +268,37 @@ export class AuthAdminController {
         });
       }
 
-      // ۲. چک وجود کاربر
-      const user = await prisma.adminUser.findUnique({ where: { id } });
-      if (!user) {
+      // ۲ و ۳. بررسی وجود کاربر + جلوگیری از حذف آخرین SUPER_ADMIN به‌صورت اتمیک
+      const outcome = await withSuperAdminLock(async (tx) => {
+        const user = await tx.adminUser.findUnique({ where: { id } });
+        if (!user) return { status: 404 as const };
+
+        if (user.role === "SUPER_ADMIN" && user.isActive) {
+          const superAdminCount = await tx.adminUser.count({
+            where: { role: "SUPER_ADMIN", isActive: true },
+          });
+
+          if (superAdminCount <= 1) return { status: 400 as const };
+        }
+
+        // ۴. حذف
+        await tx.adminUser.delete({ where: { id } });
+        return { status: 200 as const };
+      });
+
+      if (outcome.status === 404) {
         return res.status(404).json({
           success: false,
           error: { message: "کاربر یافت نشد" },
         });
       }
 
-      // ۳. جلوگیری از حذف آخرین SUPER_ADMIN
-      if (user.role === "SUPER_ADMIN" && user.isActive) {
-        const superAdminCount = await prisma.adminUser.count({
-          where: { role: "SUPER_ADMIN", isActive: true },
+      if (outcome.status === 400) {
+        return res.status(400).json({
+          success: false,
+          error: { message: "نمی‌توانید آخرین سوپر ادمین را حذف کنید" },
         });
-
-        if (superAdminCount <= 1) {
-          return res.status(400).json({
-            success: false,
-            error: { message: "نمی‌توانید آخرین سوپر ادمین را حذف کنید" },
-          });
-        }
       }
-
-      // ۴. حذف
-      await prisma.adminUser.delete({ where: { id } });
 
       res.json({ success: true, message: "کاربر با موفقیت حذف شد" });
     } catch (error: unknown) {

@@ -6,7 +6,7 @@ import { SectionHead } from "@/components/ui/SectionHead";
 import { Badge } from "@/components/ui/Badge";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { toPersianNumber } from "@/lib/utils";
-import { API_URL } from "@/lib/api";
+import { API_URL, safeExternalUrl } from "@/lib/api";
 import { LoadError } from "@/components/ui/LoadError";
 
 interface MediaItem {
@@ -97,9 +97,9 @@ export default function MediaPage() {
                   <p className="text-sm text-foreground-muted leading-relaxed mb-6 line-clamp-3 flex-1">
                     {item.description}
                   </p>
-                  {item.sourceUrl && (
+                  {safeExternalUrl(item.sourceUrl) && (
                     <a
-                      href={item.sourceUrl}
+                      href={safeExternalUrl(item.sourceUrl) ?? undefined}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm font-bold text-accent hover:underline inline-flex items-center gap-1 mt-auto"

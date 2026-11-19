@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   Plus,
@@ -9,6 +9,8 @@ import {
   Loader2,
   Trash2,
   AlertTriangle,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { EditUserModal } from "@/components/admin/EditUserModal";
 import { API_URL } from "@/lib/api";
@@ -27,11 +29,21 @@ const USERS_ENDPOINT = `${API_BASE}/auth/admin/users`;
 export default function AdminAccountsPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // 👇 حالت خطا از حالت «فهرست خالی» جداست تا خطای سرور پیام و دکمهٔ تلاش مجدد داشته باشد
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [deletingUser, setDeletingUser] = useState<AdminUser | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  const deleteDialogRef = useRef<HTMLDivElement>(null);
+  const deleteCancelRef = useRef<HTMLButtonElement>(null);
+  const isDeletingRef = useRef(isDeleting);
+  useEffect(() => {
+    isDeletingRef.current = isDeleting;
+  }, [isDeleting]);
 
   // گرفتن آیدی خودت (برای مخفی کردن دکمه حذف)
   useEffect(() => {
@@ -44,13 +56,26 @@ export default function AdminAccountsPage() {
   useEffect(() => {
     let isMounted = true;
     const fetchUsers = async () => {
+      setIsLoading(true);
+      setLoadError(null);
       try {
         const res = await fetch(USERS_ENDPOINT, { credentials: "include" });
-        if (res.ok && isMounted) {
-          setUsers((await res.json()).data);
+        if (!res.ok) {
+          const message =
+            res.status === 401
+              ? "نشست شما منقضی شده است. دوباره وارد شوید."
+              : res.status === 403
+                ? "شما مجوز مشاهدهٔ فهرست کاربران را ندارید."
+                : "دریافت فهرست کاربران از سرور انجام نشد. لطفاً دوباره تلاش کنید.";
+          if (isMounted) setLoadError(message);
+          return;
         }
+        const json = await res.json();
+        if (isMounted) setUsers(Array.isArray(json.data) ? json.data : []);
       } catch (error) {
         console.error(error);
+        if (isMounted)
+          setLoadError("ارتباط با سرور برقرار نشد. اتصال خود را بررسی کنید.");
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -59,7 +84,47 @@ export default function AdminAccountsPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [reloadKey]);
+
+  // 👇 دیالوگ حذف: فوکوس اولیه بر «انصراف»، Escape، محدودکردن Tab و بازگردانی فوکوس
+  useEffect(() => {
+    if (!deletingUser) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    deleteCancelRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (isDeletingRef.current) return;
+        event.preventDefault();
+        setDeletingUser(null);
+        setDeleteError(null);
+        return;
+      }
+      if (event.key !== "Tab" || !deleteDialogRef.current) return;
+
+      const focusable = deleteDialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused?.focus?.();
+    };
+  }, [deletingUser]);
 
   const refreshUsers = async () => {
     try {
@@ -118,6 +183,31 @@ export default function AdminAccountsPage() {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="max-w-[1000px] mx-auto space-y-6">
+        <h1 className="text-2xl font-black text-primary">
+          مدیریت کاربران ادمین
+        </h1>
+        <div
+          role="alert"
+          className="bg-white border border-red-200 rounded-2xl p-8 text-center space-y-4"
+        >
+          <div className="w-12 h-12 mx-auto rounded-full bg-red-50 text-red-600 flex items-center justify-center">
+            <AlertCircle size={24} />
+          </div>
+          <p className="text-sm text-red-700">{loadError}</p>
+          <button
+            onClick={() => setReloadKey((key) => key + 1)}
+            className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-bold"
+          >
+            <RefreshCw size={16} /> تلاش دوباره
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-[1000px] mx-auto space-y-6">
       <div className="flex justify-between items-center">
@@ -144,6 +234,16 @@ export default function AdminAccountsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
+            {users.length === 0 && (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="px-6 py-12 text-center text-sm text-foreground-muted"
+                >
+                  هنوز کاربر ادمینی ثبت نشده است.
+                </td>
+              </tr>
+            )}
             {users.map((u) => {
               const isSelf = u.id === currentUserId;
               return (
@@ -228,16 +328,26 @@ export default function AdminAccountsPage() {
           onClick={() => !isDeleting && setDeletingUser(null)}
         >
           <div
+            ref={deleteDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-user-title"
+            aria-describedby="delete-user-description"
             className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-full bg-red-50 text-red-600 flex items-center justify-center shrink-0">
-                <AlertTriangle size={22} />
+                <AlertTriangle size={22} aria-hidden="true" />
               </div>
               <div>
-                <h3 className="font-bold text-primary">حذف کاربر</h3>
-                <p className="text-xs text-foreground-muted mt-1">
+                <h3 id="delete-user-title" className="font-bold text-primary">
+                  حذف کاربر
+                </h3>
+                <p
+                  id="delete-user-description"
+                  className="text-xs text-foreground-muted mt-1"
+                >
                   آیا از حذف این کاربر مطمئن هستید؟
                 </p>
               </div>
@@ -263,6 +373,7 @@ export default function AdminAccountsPage() {
 
             <div className="flex gap-2 justify-end pt-2">
               <button
+                ref={deleteCancelRef}
                 onClick={() => {
                   setDeletingUser(null);
                   setDeleteError(null);

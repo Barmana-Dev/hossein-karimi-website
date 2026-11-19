@@ -46,7 +46,9 @@ export async function generateMetadata({
   return {
     title: result.status === "ok" ? result.data.title : "سابقه حرفه‌ای",
     description:
-      result.status === "ok" ? result.data.description.slice(0, 150) : undefined,
+      result.status === "ok"
+        ? (result.data.description ?? "").slice(0, 150)
+        : undefined,
   };
 }
 
