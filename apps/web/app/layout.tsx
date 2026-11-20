@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
-import { Vazirmatn } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { MainLayoutWrapper } from "@/components/layout/MainLayoutWrapper";
 import { API_URL, SITE_URL } from "@/lib/api";
 
-const vazirmatn = Vazirmatn({
-  subsets: ["arabic", "latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
+// 👇 فونت وزیرمتن به‌صورت محلی (self-hosted) بارگذاری می‌شود.
+// نسخهٔ قبلی از next/font/google استفاده می‌کرد که در زمان build به شبکه وابسته
+// بود و در محیط بدون دسترسی به Google، سایت با فونت پیش‌فرض نمایش داده می‌شد.
+const vazirmatn = localFont({
+  src: "../public/fonts/Vazirmatn-Variable.woff2",
   variable: "--font-vazirmatn",
+  weight: "100 900",
+  style: "normal",
   display: "swap",
+  fallback: ["system-ui", "sans-serif"],
 });
 
 const DEFAULT_TITLE = "دکتر حسین کریمی | حقوق، امور گمرکی و تجارت";

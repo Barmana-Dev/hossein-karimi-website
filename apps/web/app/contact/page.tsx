@@ -27,7 +27,16 @@ export default function ContactPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // 👇 پاسخ API برای هر فیلد آرایه‌ای از پیام‌هاست؛ هر دو شکل پشتیبانی می‌شود
+  const [fieldErrors, setFieldErrors] = useState<
+    Record<string, string | string[]>
+  >({});
+
+  // پیام جمال‌اولین خطای یک فیلد را برمی‌گرداند
+  const errorFor = (key: string): string | undefined => {
+    const value = fieldErrors[key];
+    return Array.isArray(value) ? value[0] : value;
+  };
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [isSettingsLoading, setIsSettingsLoading] = useState(true);
@@ -189,7 +198,11 @@ export default function ContactPage() {
           {/* ستون فرم */}
           <div className="w-full lg:w-[60%] p-10 md:p-14 bg-white relative">
             {isSuccess ? (
-              <div className="h-full flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-500">
+              <div
+                role="status"
+                aria-live="polite"
+                className="h-full flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-500"
+              >
                 <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center text-green-500 mb-6">
                   <CheckCircle2 size={40} />
                 </div>
@@ -211,14 +224,17 @@ export default function ContactPage() {
                 </h2>
 
                 {errorMsg && (
-                  <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-center gap-2">
+                  <div
+                    role="alert"
+                    className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-center gap-2"
+                  >
                     <AlertCircle size={18} /> {errorMsg}
                   </div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
+                    <div className="space-y-2 field-group">
                       <label
                         htmlFor="fullName"
                         className="text-xs font-bold text-primary"
@@ -231,16 +247,26 @@ export default function ContactPage() {
                         id="fullName"
                         type="text"
                         autoComplete="name"
-                        className={`w-full bg-transparent border-b-2 ${fieldErrors.fullName ? "border-red-500" : "border-border"} py-2 text-sm focus:outline-none focus:border-accent transition-colors`}
+                        required
+                        minLength={3}
+                        aria-required="true"
+                        aria-invalid={Boolean(errorFor("fullName"))}
+                        aria-describedby={
+                          errorFor("fullName") ? "fullName-error" : undefined
+                        }
+                        className="field-input"
                         placeholder="مثلاً: علی محمدی"
                       />
-                      {fieldErrors.fullName && (
-                        <span className="text-[10px] text-red-500">
-                          {fieldErrors.fullName}
+                      {errorFor("fullName") && (
+                        <span
+                          id="fullName-error"
+                          className="text-[11px] text-red-600"
+                        >
+                          {errorFor("fullName")}
                         </span>
                       )}
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 field-group">
                       <label
                         htmlFor="tel"
                         className="text-xs font-bold text-primary"
@@ -251,20 +277,29 @@ export default function ContactPage() {
                         name="phone"
                         id="tel"
                         type="tel"
+                        inputMode="tel"
+                        dir="ltr"
                         autoComplete="tel"
-                        className={`w-full bg-transparent border-b-2 ${fieldErrors.phone ? "border-red-500" : "border-border"} py-2 text-sm focus:outline-none focus:border-accent transition-colors`}
+                        aria-invalid={Boolean(errorFor("phone"))}
+                        aria-describedby={
+                          errorFor("phone") ? "phone-error" : undefined
+                        }
+                        className="field-input"
                         placeholder="۰۹۱۲۳۴۵۶۷۸۹"
                       />
-                      {fieldErrors.phone && (
-                        <span className="text-[10px] text-red-500">
-                          {fieldErrors.phone}
+                      {errorFor("phone") && (
+                        <span
+                          id="phone-error"
+                          className="text-[11px] text-red-600"
+                        >
+                          {errorFor("phone")}
                         </span>
                       )}
                     </div>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
+                    <div className="space-y-2 field-group">
                       <label
                         htmlFor="email"
                         className="text-xs font-bold text-primary"
@@ -275,17 +310,26 @@ export default function ContactPage() {
                         name="email"
                         type="email"
                         id="email"
+                        inputMode="email"
+                        dir="ltr"
                         autoComplete="email"
-                        className={`w-full bg-transparent border-b-2 ${fieldErrors.email ? "border-red-500" : "border-border"} py-2 text-sm focus:outline-none focus:border-accent transition-colors`}
+                        aria-invalid={Boolean(errorFor("email"))}
+                        aria-describedby={
+                          errorFor("email") ? "email-error" : undefined
+                        }
+                        className="field-input"
                         placeholder="name@example.com"
                       />
-                      {fieldErrors.email && (
-                        <span className="text-[10px] text-red-500">
-                          {fieldErrors.email}
+                      {errorFor("email") && (
+                        <span
+                          id="email-error"
+                          className="text-[11px] text-red-600"
+                        >
+                          {errorFor("email")}
                         </span>
                       )}
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 field-group">
                       <label
                         htmlFor="type"
                         className="text-xs font-bold text-primary"
@@ -297,8 +341,11 @@ export default function ContactPage() {
                         id="type"
                         required
                         aria-required="true"
-                        aria-invalid={Boolean(fieldErrors.type)}
-                        className={`w-full bg-transparent border-b-2 ${fieldErrors.type ? "border-red-500" : "border-border"} py-2 text-sm focus:outline-none focus:border-accent transition-colors appearance-none cursor-pointer`}
+                        aria-invalid={Boolean(errorFor("type"))}
+                        aria-describedby={
+                          errorFor("type") ? "type-error" : undefined
+                        }
+                        className="field-input appearance-none cursor-pointer"
                       >
                         <option value="">انتخاب کنید...</option>
                         <option value="legal">مشاوره حقوقی</option>
@@ -307,17 +354,18 @@ export default function ContactPage() {
                         <option value="media">رسانه</option>
                         <option value="other">سایر</option>
                       </select>
-                      {fieldErrors.type && (
-                        <span className="text-[10px] text-red-500">
-                          {Array.isArray(fieldErrors.type)
-                            ? fieldErrors.type[0]
-                            : fieldErrors.type}
+                      {errorFor("type") && (
+                        <span
+                          id="type-error"
+                          className="text-[11px] text-red-600"
+                        >
+                          {errorFor("type")}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 field-group">
                     <label
                       htmlFor="subject"
                       className="text-xs font-bold text-primary"
@@ -328,17 +376,27 @@ export default function ContactPage() {
                       name="subject"
                       id="subject"
                       type="text"
-                      className={`w-full bg-transparent border-b-2 ${fieldErrors.subject ? "border-red-500" : "border-border"} py-2 text-sm focus:outline-none focus:border-accent transition-colors`}
+                      required
+                      minLength={3}
+                      aria-required="true"
+                      aria-invalid={Boolean(errorFor("subject"))}
+                      aria-describedby={
+                        errorFor("subject") ? "subject-error" : undefined
+                      }
+                      className="field-input"
                       placeholder="موضوع پیام شما..."
                     />
-                    {fieldErrors.subject && (
-                      <span className="text-[10px] text-red-500">
-                        {fieldErrors.subject}
+                    {errorFor("subject") && (
+                      <span
+                        id="subject-error"
+                        className="text-[11px] text-red-600"
+                      >
+                        {errorFor("subject")}
                       </span>
                     )}
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 field-group">
                     <label
                       htmlFor="message"
                       className="text-xs font-bold text-primary"
@@ -349,12 +407,22 @@ export default function ContactPage() {
                       name="message"
                       id="message"
                       rows={3}
-                      className={`w-full bg-transparent border-b-2 ${fieldErrors.message ? "border-red-500" : "border-border"} py-2 text-sm focus:outline-none focus:border-accent transition-colors resize-none`}
+                      required
+                      minLength={10}
+                      aria-required="true"
+                      aria-invalid={Boolean(errorFor("message"))}
+                      aria-describedby={
+                        errorFor("message") ? "message-error" : undefined
+                      }
+                      className="field-input resize-none"
                       placeholder="توضیحات خود را بنویسید..."
                     ></textarea>
-                    {fieldErrors.message && (
-                      <span className="text-[10px] text-red-500">
-                        {fieldErrors.message}
+                    {errorFor("message") && (
+                      <span
+                        id="message-error"
+                        className="text-[11px] text-red-600"
+                      >
+                        {errorFor("message")}
                       </span>
                     )}
                   </div>

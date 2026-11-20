@@ -89,7 +89,20 @@ export default function MyProfilePage() {
       if (!res.ok) throw new Error(data.error?.message || "خطا در ذخیره");
 
       setSuccessMsg("اطلاعات با موفقیت به‌روزرسانی شد.");
-      setFormData((prev) => ({ ...prev, password: "", currentPassword: "" }));
+      // 👇 نام/ایمیل جدید را هم در فرم همگام می‌کنیم (پاسخ سرور منبع حقیقت است)
+      if (data?.data) {
+        setFormData((prev) => ({
+          ...prev,
+          name: data.data.name ?? prev.name,
+          email: data.data.email ?? prev.email,
+          password: "",
+          currentPassword: "",
+        }));
+      } else {
+        setFormData((prev) => ({ ...prev, password: "", currentPassword: "" }));
+      }
+      // 👇 هدر داشبورد بدون رفرش صفحه نام جدید را نشان می‌دهد
+      window.dispatchEvent(new Event("admin:user-updated"));
       router.refresh();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "خطای ناشناخته");

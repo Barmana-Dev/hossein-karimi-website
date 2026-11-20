@@ -5,6 +5,7 @@ import { prisma } from "../../config/prisma";
 import path from "path";
 import fs from "fs";
 import { config } from "../../config/env";
+import { buildMeta, getPageParams } from "../../lib/pagination";
 
 // ===== بررسی محتوای واقعی فایل (امضای بایت‌های ابتدایی) =====
 interface DetectedImage {
@@ -154,10 +155,52 @@ export class MediaController {
 
   async getAll(req: AuthRequest, res: Response) {
     try {
-      const assets = await prisma.asset.findMany({
-        orderBy: { createdAt: "desc" },
+      // 👇 کتابخانه رسانه می‌تواند خیلی بزرگ شود؛ با ارسال page/limit
+      // پاسخ صفحه‌بندی می‌شود و بدون آن (مثل انتخابگر تصویر) کل فهرست
+      // برای سازگاری با کدهای قبلی برگردانده می‌شود.
+      const params = getPageParams(req, 24);
+      const where = params.search
+        ? {
+            OR: [
+              {
+                altText: {
+                  contains: params.search,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                urlOrKey: {
+                  contains: params.search,
+                  mode: "insensitive" as const,
+                },
+              },
+            ],
+          }
+        : {};
+
+      if (!params.paginated) {
+        const assets = await prisma.asset.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+        });
+        return res.json({ success: true, data: assets });
+      }
+
+      const [items, total] = await Promise.all([
+        prisma.asset.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          skip: params.skip,
+          take: params.limit,
+        }),
+        prisma.asset.count({ where }),
+      ]);
+
+      return res.json({
+        success: true,
+        data: items,
+        meta: buildMeta(total, params.page, params.limit),
       });
-      res.json({ success: true, data: assets });
     } catch (error: unknown) {
       const message = publicErrorMessage(error, "خطا در دریافت لیست");
       res.status(500).json({ success: false, error: { message } });

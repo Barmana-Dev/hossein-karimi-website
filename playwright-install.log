@@ -1,11 +1,37 @@
-Downloading Winldd (playwright winldd v1007)[2m from https://cdn.playwright.dev/dbazure/download/playwright/builds/winldd/1007/winldd-win64.zip[22m
-|                                                                                |   1% of 0.1 MiB
-|■■■■■■■■                                                                        |  10% of 0.1 MiB
-|■■■■■■■■■■■■■■■■                                                                |  20% of 0.1 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  31% of 0.1 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 0.1 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  61% of 0.1 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  74% of 0.1 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  87% of 0.1 MiB
-|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 0.1 MiB
-Winldd (playwright winldd v1007) downloaded to C:\Users\Topsystem\AppData\Local\ms-playwright\winldd-1007
+Downloading Chrome for Testing 159.0.8154.6 (playwright chromium v1255)[2m from https://cdn.playwright.dev/builds/cft/159.0.8154.6/win64/chrome-win64.zip[22m
+Error: Download failed: server returned code 403 body '<?xml version='1.0' encoding='UTF-8'?><Error><Code>AccessDenied</Code><Message>Access denied.</Message><Details>We're sorry, but this service is not available in your location</Details></Error>'. URL: https://cdn.playwright.dev/builds/cft/159.0.8154.6/win64/chrome-win64.zip
+    at IncomingMessage.handleError (F:\Sherkat\Projects\hossein-karimi-website\node_modules\playwright-core\lib\coreBundle.js:34250:23)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:2147:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+Downloading Chrome for Testing 159.0.8154.6 (playwright chromium v1255)[2m from https://cdn.playwright.dev/builds/cft/159.0.8154.6/win64/chrome-win64.zip[22m
+Error: Download failed: server returned code 403 body '<?xml version='1.0' encoding='UTF-8'?><Error><Code>AccessDenied</Code><Message>Access denied.</Message><Details>We're sorry, but this service is not available in your location</Details></Error>'. URL: https://cdn.playwright.dev/builds/cft/159.0.8154.6/win64/chrome-win64.zip
+    at IncomingMessage.handleError (F:\Sherkat\Projects\hossein-karimi-website\node_modules\playwright-core\lib\coreBundle.js:34250:23)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:2147:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+Downloading Chrome for Testing 159.0.8154.6 (playwright chromium v1255)[2m from https://cdn.playwright.dev/builds/cft/159.0.8154.6/win64/chrome-win64.zip[22m
+Error: Download failed: server returned code 403 body '<?xml version='1.0' encoding='UTF-8'?><Error><Code>AccessDenied</Code><Message>Access denied.</Message><Details>We're sorry, but this service is not available in your location</Details></Error>'. URL: https://cdn.playwright.dev/builds/cft/159.0.8154.6/win64/chrome-win64.zip
+    at IncomingMessage.handleError (F:\Sherkat\Projects\hossein-karimi-website\node_modules\playwright-core\lib\coreBundle.js:34250:23)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:2147:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+Downloading Chrome for Testing 159.0.8154.6 (playwright chromium v1255)[2m from https://cdn.playwright.dev/builds/cft/159.0.8154.6/win64/chrome-win64.zip[22m
+Error: Download failed: server returned code 403 body '<?xml version='1.0' encoding='UTF-8'?><Error><Code>AccessDenied</Code><Message>Access denied.</Message><Details>We're sorry, but this service is not available in your location</Details></Error>'. URL: https://cdn.playwright.dev/builds/cft/159.0.8154.6/win64/chrome-win64.zip
+    at IncomingMessage.handleError (F:\Sherkat\Projects\hossein-karimi-website\node_modules\playwright-core\lib\coreBundle.js:34250:23)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:2147:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+Downloading Chrome for Testing 159.0.8154.6 (playwright chromium v1255)[2m from https://cdn.playwright.dev/builds/cft/159.0.8154.6/win64/chrome-win64.zip[22m
+Error: Download failed: server returned code 403 body '<?xml version='1.0' encoding='UTF-8'?><Error><Code>AccessDenied</Code><Message>Access denied.</Message><Details>We're sorry, but this service is not available in your location</Details></Error>'. URL: https://cdn.playwright.dev/builds/cft/159.0.8154.6/win64/chrome-win64.zip
+    at IncomingMessage.handleError (F:\Sherkat\Projects\hossein-karimi-website\node_modules\playwright-core\lib\coreBundle.js:34250:23)
+    at IncomingMessage.emit (node:events:526:24)
+    at endReadableNT (node:internal/streams/readable:2147:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+Failed to install browsers
+Error: Failed to download Chrome for Testing 159.0.8154.6 (playwright chromium v1255), caused by
+Error: Download failure, code=1
+    at ChildProcess.<anonymous> (F:\Sherkat\Projects\hossein-karimi-website\node_modules\playwright-core\lib\coreBundle.js:34127:32)
+    at ChildProcess.emit (node:events:514:20)
+    at ChildProcess._handle.onexit (node:internal/child_process:323:12)
+PW_INSTALL_EXIT=1

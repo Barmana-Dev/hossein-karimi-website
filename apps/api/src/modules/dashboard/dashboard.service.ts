@@ -13,12 +13,26 @@ export class DashboardService {
         where: { status: "new" },
       });
 
+      // 👇 مدیر درخواست‌ها هم باید اعلان درخواست‌های جدید را ببیند؛
+      // قبلاً این فهرست خالی بود و زنگ اعلان برای این نقش هیچ‌وقت پر نمی‌شد.
+      const recentInquiries = await prisma.inquiry.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 4,
+        select: {
+          id: true,
+          fullName: true,
+          subject: true,
+          status: true,
+          createdAt: true,
+        },
+      });
+
       return {
         articles: { published: 0, drafts: 0 },
         agencies: { total: 0 },
         inquiries: {
           new: newInquiries,
-          recent: [], // 👈 خالی! چون INQUIRY_MANAGER از صفحه /admin/inquiries جزئیات رو می‌بینه
+          recent: recentInquiries,
         },
       };
     }

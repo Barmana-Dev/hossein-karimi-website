@@ -108,21 +108,19 @@ async function main() {
     await prisma.expertise.upsert({
       where: { slug: exp.slug },
       update: {},
-      create: { ...exp, status: "draft" }, // 👈 draft
+      create: { ...exp, status: "draft" }, 
     });
   }
 
   // ===== کاربران ادمین (رمز فقط از env — بدون هیچ رمز پیش‌فرض) =====
   const adminPassword = process.env.SEED_ADMIN_PASSWORD;
   const editorPassword = process.env.SEED_EDITOR_PASSWORD;
-  const inquiryManagerPassword = process.env.SEED_INQUIRY_MANAGER_PASSWORD;
 
   // 👇 بدون رمز، seed اجرا نمی‌شود (هیچ رمز ساده‌ای ساخته یا چاپ نمی‌شود)
-  if (!adminPassword || !editorPassword || !inquiryManagerPassword) {
+  if (!adminPassword || !editorPassword ) {
     const missing = [
       !adminPassword && "SEED_ADMIN_PASSWORD",
       !editorPassword && "SEED_EDITOR_PASSWORD",
-      !inquiryManagerPassword && "SEED_INQUIRY_MANAGER_PASSWORD",
     ].filter(Boolean);
 
     console.error("⛔ اجرای seed بدون رمز پیش‌فرض مجاز نیست.");
@@ -158,19 +156,7 @@ async function main() {
   });
   console.log("✅ Editor user: editor@example.com");
 
-  // 👇 نقش INQUIRY_MANAGER هم ساخته می‌شود (قبل‌تر رمزش خوانده می‌شد ولی حسابی نداشت)
-  const inquiryManagerHash = await bcrypt.hash(inquiryManagerPassword, 10);
-  await prisma.adminUser.upsert({
-    where: { email: "inquiries@example.com" },
-    update: {},
-    create: {
-      name: "مدیر درخواست‌ها",
-      email: "inquiries@example.com",
-      passwordHash: inquiryManagerHash,
-      role: "INQUIRY_MANAGER",
-    },
-  });
-  console.log("✅ Inquiry manager user: inquiries@example.com");
+
 
   // ===== مقالات =====
   const articles = [

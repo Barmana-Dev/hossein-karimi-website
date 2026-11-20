@@ -59,6 +59,7 @@ export default function AdminDashboard() {
 
         const statsRes = await fetch(`${API_URL}/admin/dashboard`, {
           credentials: "include",
+          cache: "no-store",
         });
         if (statsRes.ok && isMounted) {
           const statsData = await statsRes.json();
@@ -70,9 +71,32 @@ export default function AdminDashboard() {
         if (isMounted) setIsLoading(false);
       }
     };
+
+    // 👇 آمار داشبورد هم بدون رفرش صفحه تازه می‌شود (درخواست جدید فوری دیده شود)
+    const refreshStats = async () => {
+      try {
+        const res = await fetch(`${API_URL}/admin/dashboard`, {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (res.ok && isMounted) {
+          const data = await res.json();
+          if (data?.data) setStats(data.data);
+        }
+      } catch {
+        /* تازه‌سازی دوره‌ای نباید خطا نشان دهد */
+      }
+    };
+
     fetchDashboardData();
+    const interval = setInterval(refreshStats, 20000);
+    const handleFocus = () => refreshStats();
+    window.addEventListener("focus", handleFocus);
+
     return () => {
       isMounted = false;
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
     };
   }, []);
 

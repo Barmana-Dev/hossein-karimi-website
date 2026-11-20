@@ -143,6 +143,7 @@ export default function AdminLayout({
       try {
         const userRes = await fetch(`${API_URL}/auth/me`, {
           credentials: "include",
+          cache: "no-store",
         });
         if (userRes.ok) {
           const userData = await userRes.json();
@@ -160,8 +161,17 @@ export default function AdminLayout({
       }
     };
     fetchUser();
+
+    // 👇 وقتی کاربر در صفحهٔ «پروفایل من» نام خود را تغییر می‌دهد،
+    // همان لحظه نام هدر داشبورد هم به‌روز می‌شود و نیازی به رفرش نیست.
+    const handleProfileUpdated = () => {
+      void fetchUser();
+    };
+    window.addEventListener("admin:user-updated", handleProfileUpdated);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("admin:user-updated", handleProfileUpdated);
     };
   }, [router]);
 
@@ -182,32 +192,48 @@ export default function AdminLayout({
     const fetchNotifications = async () => {
       if (typeof document !== "undefined" && document.hidden) return;
       try {
+        // 👇 cache: no-store تا مرورگر پاسخ قدیمی داشبورد را برنگرداند
         const dashRes = await fetch(`${API_URL}/admin/dashboard`, {
           credentials: "include",
+          cache: "no-store",
         });
-        if (dashRes.ok && isMounted) {
-          const dashData = await dashRes.json();
-          // فیلتر کردن اعلان‌های خوانده‌شده
-          const readIds = readIdsFromStorage();
-          const unread = dashData.data.inquiries.recent.filter(
-            (n: Notification) => !readIds.includes(n.id),
-          );
-          setNotifications(unread);
-        }
+        if (!dashRes.ok || !isMounted) return;
+
+        const dashData = await dashRes.json();
+        // فیلتر کردن اعلان‌های خوانده‌شده
+        const readIds = readIdsFromStorage();
+        const recent = dashData?.data?.inquiries?.recent;
+        const unread = Array.isArray(recent)
+          ? recent.filter((n: Notification) => !readIds.includes(n.id))
+          : [];
+        if (isMounted) setNotifications(unread);
       } catch (error) {
         console.error("Error fetching notifications:", error);
       }
     };
 
-    // اجرای اولیه و سپس هر ۶۰ ثانیه
+    // 👇 اجرای اولیه + تازه‌سازی هر ۱۵ ثانیه (قبلاً ۶۰ ثانیه بود و درخواست
+    // جدید تا یک دقیقه در زنگ اعلان دیده نمی‌شد)
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60000);
+    const interval = setInterval(fetchNotifications, 15000);
+
+    // 👇 به‌محض بازگشت به تب یا فعال‌شدن پنجره، فوراً تازه‌سازی می‌شود
+    const handleVisibility = () => {
+      if (!document.hidden) fetchNotifications();
+    };
+    const handleFocus = () => fetchNotifications();
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleFocus);
 
     return () => {
       isMounted = false;
       clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleFocus);
     };
-  }, []);
+    // 👇 با تغییر مسیر هم دوباره اجرا و تازه‌سازی می‌شود
+  }, [pathname]);
 
   // 👇 تشخیص دسکتاپ برای اینکه سایدبار بستهٔ موبایل از ترتیب فوکوس خارج شود
   useEffect(() => {

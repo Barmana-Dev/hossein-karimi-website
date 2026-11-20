@@ -78,9 +78,12 @@ const optimizeUpload = async (
 
   try {
     const { default: sharp } = await import("sharp");
+    // 👇 نام خروجی عمداً با فایل ورودی یکی نیست؛ برای WebP نام پیش‌فرض با
+    // فایل ورودی یکسان می‌شد و sharp خطای «Cannot use same file for input and
+    // output» می‌داد؛ نتیجه این بود که WebPها بی‌صدا بهینه نمی‌شدند.
     const targetPath = path.join(
       config.uploadsDir,
-      path.basename(file.filename, path.extname(file.filename)) + ".webp",
+      path.basename(file.filename, path.extname(file.filename)) + "-opt.webp",
     );
 
     await sharp(file.path)

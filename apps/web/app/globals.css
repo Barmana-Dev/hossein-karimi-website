@@ -1,6 +1,15 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+@font-face {
+  font-family: "Vazirmatn-Variable";
+  src: url(../public/fonts/Vazirmatn-Variable.woff2);
+
+  *, body {
+     font-family: "Vazirmatn-Variable";
+  }
+}
+
 /* ===== Design Tokens (معادل tailwind.config.ts در v3) ===== */
 @theme {
   /* Colors */
@@ -10,7 +19,7 @@
 
   --color-accent: #b18a52;
   --color-accent-light: #d4b47e;
-  --color-accent-dark: #a07b45;
+  --color-accent-dark: #8e6b3f;
 
   --color-text: #17212c;
   /* 👇 #6b7684 روی پس‌زمینهٔ #f5f6f8 نسبت ۴٫۲۹:۱ داشت و حد AA (۴٫۵:۱) را رد
@@ -24,11 +33,9 @@
   --color-border: #e4e7ec;
   --color-success: #237d61;
 
-  --color-accent: #b18a52;
-  --color-accent-dark: #8e6b3f;
-
-  /* Font Family */
-  --font-sans: var(--font-vazirmatn), sans-serif;
+  /* Font Family — وزیرمتن (محلی) و در نبود آن، فونت‌های سیستمی */
+  --font-sans: var(--font-vazirmatn), "Vazirmatn", ui-sans-serif, system-ui,
+    "Segoe UI", Tahoma, sans-serif;
 
   /* Border Radius */
   --radius: 12px;
@@ -124,6 +131,62 @@
   .container-custom {
     @apply max-w-[1220px] mx-auto px-6 md:px-7;
   }
+
+  /* 👇 فیلدهای فرم (خط تأکید + هالهٔ نور هنگام فوکوس، بدون جابه‌جایی چیدمان) */
+  .field-input {
+    width: 100%;
+    background-color: transparent;
+    border: 0;
+    border-bottom: 2px solid var(--color-border);
+    border-radius: 10px 10px 0 0;
+    padding: 0.55rem 0.35rem 0.5rem;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    transition:
+      border-color 250ms ease,
+      background-color 250ms ease,
+      box-shadow 250ms ease;
+  }
+
+  .field-input::placeholder {
+    color: color-mix(in srgb, var(--color-text-muted) 75%, transparent);
+  }
+
+  .field-input:hover {
+    border-bottom-color: color-mix(
+      in srgb,
+      var(--color-accent) 55%,
+      var(--color-border)
+    );
+  }
+
+  .field-input:focus {
+    outline: none;
+    border-bottom-color: var(--color-accent);
+    background-color: color-mix(in srgb, var(--color-accent) 7%, transparent);
+    box-shadow:
+      0 2px 0 -1px var(--color-accent),
+      0 14px 30px -24px rgba(177, 138, 82, 0.95);
+  }
+
+  /* پرچم خطا (aria-invalid) رنگ قرمز را حفظ می‌کند */
+  .field-input[aria-invalid="true"] {
+    border-bottom-color: #dc2626;
+  }
+
+  .field-input[aria-invalid="true"]:focus {
+    border-bottom-color: #dc2626;
+    background-color: color-mix(in srgb, #dc2626 6%, transparent);
+    box-shadow:
+      0 2px 0 -1px #dc2626,
+      0 14px 30px -24px rgba(220, 38, 38, 0.9);
+  }
+
+  /* برچسب فیلد در حال فوکوس، رنگ تأکیدی می‌گیرد */
+  .field-group:focus-within label {
+    color: var(--color-accent);
+  }
+
 
   .section-padding {
     @apply py-20 md:py-[120px];

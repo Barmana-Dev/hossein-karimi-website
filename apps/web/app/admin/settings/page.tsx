@@ -59,18 +59,31 @@ export default function AdminSettingsPage() {
     }
   }, [error]);
 
+  // 👇 اگر دریافت تنظیمات شکست بخورد، فرم خالی نباید با یک ذخیره،
+  // داده‌های واقعی سایت را پاک کند.
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchSettings = async () => {
+      setLoadError(null);
       try {
         const res = await fetch(`${API_URL}/public/settings`, {
           credentials: "include",
+          cache: "no-store",
         });
-        if (res.ok) {
-          const json = await res.json();
-          setFormData(json.data);
+        if (!res.ok) {
+          setLoadError(
+            "دریافت تنظیمات از سرور انجام نشد. برای جلوگیری از پاک شدن داده‌ها، ذخیره غیرفعال است.",
+          );
+          return;
         }
+        const json = await res.json();
+        if (json?.data) setFormData((prev) => ({ ...prev, ...json.data }));
       } catch (error) {
         console.error(error);
+        setLoadError(
+          "ارتباط با سرور برقرار نشد. برای جلوگیری از پاک شدن داده‌ها، ذخیره غیرفعال است.",
+        );
       } finally {
         setIsFetching(false);
       }
@@ -121,7 +134,7 @@ export default function AdminSettingsPage() {
         <h1 className="text-2xl font-black text-primary">تنظیمات سایت</h1>
         <Button
           onClick={handleSave}
-          disabled={isLoading}
+          disabled={isLoading || Boolean(loadError)}
           variant="primary"
           className="gap-2"
         >
@@ -142,6 +155,22 @@ export default function AdminSettingsPage() {
       {successMsg && (
         <div className="p-4 bg-green-50 text-green-700 rounded-xl text-sm flex items-center gap-2">
           <CheckCircle2 size={18} /> {successMsg}
+        </div>
+      )}
+      {loadError && (
+        <div
+          role="alert"
+          className="p-4 bg-orange-50 border border-orange-200 text-orange-800 rounded-xl text-sm flex flex-wrap items-center justify-between gap-3"
+        >
+          <span className="flex items-center gap-2">
+            <AlertCircle size={18} /> {loadError}
+          </span>
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg text-xs font-bold"
+          >
+            تلاش دوباره
+          </button>
         </div>
       )}
 

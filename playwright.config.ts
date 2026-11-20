@@ -14,7 +14,17 @@ export default defineConfig({
     trace: "on-first-retry",
     locale: "fa-IR",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  // 👇 به‌جای دانلود مرورگر اختصاصی Playwright، از Chrome نصب‌شده روی سیستم
+  // استفاده می‌کنیم (با E2E_CHANNEL می‌توان به msedge یا chromium برگرداند).
+  projects: [
+    {
+      name: "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        channel: process.env.E2E_CHANNEL || "chrome",
+      },
+    },
+  ],
   webServer: [
     {
       command: "npm run dev:api",

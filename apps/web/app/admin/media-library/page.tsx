@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Search,
   Trash2,
@@ -28,7 +28,12 @@ const ITEMS_PER_PAGE = 12;
 export default function MediaLibraryPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [reloadKey, setReloadKey] = useState(0);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -37,36 +42,69 @@ export default function MediaLibraryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchAssets = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_URL}/public/media/list`, {
-        credentials: "include",
-      });
-      if (res.ok) setAssets((await res.json()).data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  // 👇 جستجو با تأخیر تا با هر کلید درخواست به سرور نرود
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm.trim());
+      setCurrentPage(1);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
+  // 👇 فهرست از سرور صفحه‌بندی می‌شود تا کتابخانهٔ خیلی بزرگ هم سریع بماند
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`${API_URL}/public/media/list`, {
-      credentials: "include",
-      signal: controller.signal,
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (json?.data) setAssets(json.data);
-      })
-      .catch(() => {
-        /* لغو شدن درخواست هنگام خروج از صفحه نادیده گرفته می‌شود */
-      })
-      .finally(() => setIsLoading(false));
+    let cancelled = false;
 
-    return () => controller.abort();
-  }, []);
+    const load = async () => {
+      setIsLoading(true);
+      setLoadError(null);
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        limit: String(ITEMS_PER_PAGE),
+      });
+      if (debouncedSearch) params.set("q", debouncedSearch);
+
+      try {
+        const res = await fetch(
+          `${API_URL}/public/media/list?${params.toString()}`,
+          {
+            credentials: "include",
+            signal: controller.signal,
+            cache: "no-store",
+          },
+        );
+        if (!res.ok) throw new Error("دریافت کتابخانه رسانه انجام نشد");
+        const json = await res.json();
+        if (cancelled) return;
+
+        const items: Asset[] = Array.isArray(json.data) ? json.data : [];
+        setAssets(items);
+        setTotalPages(json.meta?.totalPages ?? 1);
+        setTotalItems(json.meta?.total ?? items.length);
+
+        // صفحهٔ فعلی بعد از حذف خالی شده باشد → یک صفحه عقب
+        if (items.length === 0 && currentPage > 1) {
+          setCurrentPage((page) => Math.max(1, page - 1));
+        }
+      } catch (err) {
+        if (cancelled || (err instanceof Error && err.name === "AbortError")) {
+          return;
+        }
+        setLoadError(
+          err instanceof Error ? err.message : "خطای ناشناخته در دریافت فایل‌ها",
+        );
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [currentPage, debouncedSearch, reloadKey]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -92,7 +130,9 @@ export default function MediaLibraryPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error?.message || "خطا در آپلود");
       closeModal();
-      fetchAssets();
+      // 👇 فایل جدید در ابتدای فهرست است؛ به صفحهٔ اول برگرد
+      setCurrentPage(1);
+      setReloadKey((key) => key + 1);
     } catch (err: unknown) {
       setUploadError(err instanceof Error ? err.message : "خطای ناشناخته");
     } finally {
@@ -114,8 +154,10 @@ export default function MediaLibraryPage() {
         method: "DELETE",
         credentials: "include",
       });
-      if (res.ok) setAssets((prev) => prev.filter((a) => a.id !== id));
-      else alert("خطا در حذف فایل");
+      if (res.ok) {
+        // 👇 فهرست و شمارش از سرور دوباره خوانده می‌شود
+        setReloadKey((key) => key + 1);
+      } else alert("خطا در حذف فایل");
     } catch (error) {
       console.error(error);
       alert("خطا در ارتباط با سرور");
@@ -126,23 +168,6 @@ export default function MediaLibraryPage() {
     navigator.clipboard.writeText(assetUrl(url));
     alert("لینک تصویر کپی شد!");
   };
-
-  const filteredAssets = Array.isArray(assets)
-    ? assets.filter(
-        (asset) =>
-          (asset.altText || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          asset.urlOrKey.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-    : [];
-
-  const totalPages = Math.ceil(filteredAssets.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedAssets = filteredAssets.slice(
-    startIndex,
-    startIndex + ITEMS_PER_PAGE,
-  );
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -185,7 +210,27 @@ export default function MediaLibraryPage() {
             className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground-muted"
           />
         </div>
+        {totalItems > 0 && (
+          <span className="text-xs text-foreground-muted">
+            {toPersianNumber(totalItems)} فایل
+          </span>
+        )}
       </div>
+
+      {loadError && (
+        <div
+          role="alert"
+          className="bg-white border border-red-200 rounded-2xl p-8 text-center space-y-4"
+        >
+          <p className="text-sm text-red-700">{loadError}</p>
+          <button
+            onClick={() => setReloadKey((key) => key + 1)}
+            className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-bold"
+          >
+            تلاش دوباره
+          </button>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-20">
@@ -194,7 +239,7 @@ export default function MediaLibraryPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {paginatedAssets.map((asset) => (
+            {assets.map((asset) => (
               <div
                 key={asset.id}
                 className="bg-white border border-border rounded-2xl overflow-hidden shadow-sm group hover:shadow-md transition-all"
@@ -239,7 +284,7 @@ export default function MediaLibraryPage() {
                 </div>
               </div>
             ))}
-            {filteredAssets.length === 0 && (
+            {assets.length === 0 && !loadError && (
               <div className="col-span-full text-center py-20 bg-white border border-border rounded-2xl">
                 <ImageIcon size={48} className="mx-auto text-border mb-4" />
                 <p className="text-foreground-muted">فایلی یافت نشد.</p>
